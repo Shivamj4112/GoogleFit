@@ -28,6 +28,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.googlefit.navigation.Navigation
+import com.example.googlefit.screens.MainScreen
 import com.example.googlefit.ui.theme.GoogleFitTheme
 
 class MainActivity : ComponentActivity() {
@@ -35,74 +37,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             GoogleFitTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+
+                Navigation()
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-
-    val context = LocalContext.current
-    val healthManager = HealthManager(context)
-    var allPermissionsGranted by remember { mutableStateOf(false) }
-
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = healthManager.requestPermissionsActivityContract()
-    ) { result: Set<String> ->
-        // Handle the result
-        val allPermissionsGranted = result.containsAll(healthManager.permissions)
-        if (allPermissionsGranted) {
-            // Do something when all permissions are granted
-        } else {
-            // Do something when permissions are not granted
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        // Check if all permissions are already granted
-        allPermissionsGranted = healthManager.hasAllPermissions(healthManager.permissions)
-    }
-
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        if (!allPermissionsGranted) {
-            Text(text = "Request Health Permissions")
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(onClick = {
-                // Trigger the permission request
-                permissionLauncher.launch(healthManager.permissions)
-            }) {
-                Text(text = "Request Permissions")
-            }
-        } else {
-            // Do something when all permissions are granted
-            Text(
-                text = "All permissions granted",
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    GoogleFitTheme {
-        Greeting("Android")
-    }
-}
