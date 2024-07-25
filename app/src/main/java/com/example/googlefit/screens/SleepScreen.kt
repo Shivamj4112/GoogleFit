@@ -1,6 +1,6 @@
 package com.example.googlefit.screens
 
-import HealthManager
+import com.example.googlefit.HealthManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.navigation.NavHostController
+import com.example.googlefit.utils.util.formatLastModifiedTime
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun SleepScreen(healthManager: HealthManager, navController: NavHostController) {
@@ -32,7 +34,7 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
         ) {
             val sleepRecords by produceState<List<SleepSessionRecord>>(initialValue = emptyList()) {
                 value = healthManager.readSleepInputs(
-                    start = java.time.Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS),
+                    start = java.time.Instant.now().minus(30, ChronoUnit.DAYS),
                     end = java.time.Instant.now()
                 )
             }
@@ -42,7 +44,9 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
             if (sleepRecords.isNotEmpty()) {
                 Text(text = "Sleep Records:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 sleepRecords.forEach { record ->
-                    Text(text = "Sleep Records: ${record.stages.firstOrNull()?.stage} h")
+                    val formattedStartTime = formatLastModifiedTime(record.startTime.toString(),is24HourFormat = false)
+                    val formattedEndTime = formatLastModifiedTime(record.endTime.toString(),is24HourFormat = false)
+                    Text(text = "Sleep Records: $formattedStartTime -> $formattedEndTime")
                 }
             } else {
                 Text(text = "No sleep records available.")

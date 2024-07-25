@@ -1,6 +1,6 @@
 package com.example.googlefit.screens
 
-import HealthManager
+import com.example.googlefit.HealthManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -150,7 +150,7 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                     fontSize = 18.sp
                 )
                 bloodGlucoseRecords.forEach { record ->
-                    Text(text = "Blood glucose : ${record.level.inMillimolesPerLiter.toInt()} mmol/L ")
+                    Text(text = "Blood glucose : ${record.level.inMillimolesPerLiter} mmol/L ")
                 }
             } else {
                 Text(text = "No blood glucose records available.")

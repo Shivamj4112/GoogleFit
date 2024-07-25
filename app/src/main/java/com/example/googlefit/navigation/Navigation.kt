@@ -1,6 +1,6 @@
 package com.example.googlefit.navigation
 
-import HealthManager
+import com.example.googlefit.HealthManager
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost

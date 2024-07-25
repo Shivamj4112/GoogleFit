@@ -1,6 +1,6 @@
 package com.example.googlefit.screens
 
-import HealthManager
+import com.example.googlefit.HealthManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,8 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
 import androidx.health.connect.client.records.HydrationRecord
+import androidx.health.connect.client.records.NutritionRecord
 import androidx.navigation.NavHostController
 
 @Composable
@@ -38,8 +38,8 @@ fun NutritionScreen(healthManager: HealthManager, navController: NavHostControll
                 )
             }
 
-            val caloriesConsumedRecords by produceState<List<ActiveCaloriesBurnedRecord>>(initialValue = emptyList()) {
-                value = healthManager.readActiveCaloriesBurnedInputs(
+            val caloriesConsumedRecords by produceState<List<NutritionRecord>>(initialValue = emptyList()) {
+                value = healthManager.readNutritionRecordInputs(
                     start = java.time.Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS),
                     end = java.time.Instant.now()
                 )
@@ -61,7 +61,7 @@ fun NutritionScreen(healthManager: HealthManager, navController: NavHostControll
             if (caloriesConsumedRecords.isNotEmpty()) {
                 Text(text = "Calories Consumed Records:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 caloriesConsumedRecords.forEach { record ->
-                    Text(text = "Calories consumed Records: ${record.energy.inKilocalories} Cal")
+                    Text(text = "Calories consumed Records: ${record.energy?.inKilocalories?.toInt()} Cal")
                 }
             } else {
                 Text(text = "No calories burned records available.")

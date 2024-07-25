@@ -75,4 +75,18 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.0")
 
     implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    implementation ("io.github.ehsannarmani:compose-charts:0.0.13")
+
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3")
+    // ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3")
+    // ViewModel utilities for Compose
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
+    // LiveData
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.3")
+    // Lifecycles only (without ViewModel or LiveData)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
+    implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
+
 }

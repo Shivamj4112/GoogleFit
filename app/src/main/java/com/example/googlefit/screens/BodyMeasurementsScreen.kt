@@ -1,6 +1,6 @@
 package com.example.googlefit.screens
 
-import HealthManager
+import com.example.googlefit.HealthManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize

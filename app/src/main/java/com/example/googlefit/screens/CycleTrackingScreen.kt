@@ -1,6 +1,5 @@
 package com.example.googlefit.screens
 
-import HealthManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
@@ -14,8 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.health.connect.client.records.CervicalMucusRecord
 import androidx.health.connect.client.records.CyclingPedalingCadenceRecord
 import androidx.navigation.NavHostController
+import com.example.googlefit.HealthManager
 
 @Composable
 fun CycleTrackingScreen(healthManager: HealthManager, navController: NavHostController) {
@@ -28,7 +29,7 @@ fun CycleTrackingScreen(healthManager: HealthManager, navController: NavHostCont
                 .verticalScroll(rememberScrollState())
         ) {
 
-            val cyclingCadence by produceState<List<CyclingPedalingCadenceRecord>>(initialValue = emptyList()) {
+            val cyclingCadence by produceState<List<CervicalMucusRecord>>(initialValue = emptyList()) {
                 value = healthManager.readCyclePedalingCadence(
                     start = java.time.Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS),
                     end = java.time.Instant.now()
@@ -43,7 +44,7 @@ fun CycleTrackingScreen(healthManager: HealthManager, navController: NavHostCont
                     fontSize = 18.sp
                 )
                 cyclingCadence.forEach { record ->
-                    Text(text = "Cycling Cadence Records: ${record.samples.firstOrNull()?.revolutionsPerMinute} rpm")
+                    Text(text = "Cycling Cadence Records: ${record.metadata.lastModifiedTime} rpm")
                 }
             } else {
                 Text(text = "No cycling cadence records available.")
