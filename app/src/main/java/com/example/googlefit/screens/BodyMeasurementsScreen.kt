@@ -1,11 +1,15 @@
 package com.example.googlefit.screens
 
-import com.example.googlefit.HealthManager
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Surface
 import androidx.compose.material3.Text
@@ -14,16 +18,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.health.connect.client.records.BodyFatRecord
 import androidx.health.connect.client.records.HeightRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.navigation.NavHostController
+import com.example.googlefit.HealthManager
 
 @Composable
-fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostController){
+fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostController) {
 
     Surface {
         Column(
@@ -56,7 +63,9 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
             if (weightRecords.isNotEmpty()) {
                 Text(text = "Weight Records:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 weightRecords.forEach { record ->
-                    Text(text = "Weight: %.1f lbs".format(record.weight.inPounds) + "  ||  ${record.weight.inKilograms} kg")
+
+                    ContentCard("Weight Records:", "${record.weight.inKilograms} kg")
+//                    Text(text = "Weight: %.1f lbs".format(record.weight.inPounds) + "  ||  ${record.weight.inKilograms} kg")
                 }
             } else {
                 Text(text = "No weight records available.")
@@ -83,6 +92,30 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
                 }
             } else {
                 Text(text = "No body fat records available.")
+            }
+        }
+    }
+}
+
+@Composable
+fun ContentCard(title : String , message  :String) {
+
+    Surface {
+
+        Column(modifier = Modifier.fillMaxSize()) {
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .padding(10.dp)
+                    .fillMaxWidth()
+                    .background(Color.Black, RoundedCornerShape(15.dp))
+                    .padding(horizontal = 40.dp, vertical = 20.dp)
+            ) {
+                Text(text = "Health Title", color = Color.White, fontSize = 24.sp)
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(text = "Health Title", color = Color.White, fontSize = 18.sp)
             }
         }
     }

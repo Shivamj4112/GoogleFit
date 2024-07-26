@@ -49,11 +49,24 @@ class HealthManager(context: Context) : ViewModel() {
     private val _stepsRecords = MutableLiveData<List<StepsRecord>>()
     val stepsRecords: LiveData<List<StepsRecord>> get() = _stepsRecords
 
+    private val _distanceRecords = MutableLiveData<List<DistanceRecord>>()
+    val distanceRecords: LiveData<List<DistanceRecord>> get() = _distanceRecords
+
+    private val _speedRecords = MutableLiveData<List<SpeedRecord>>()
+    val speedRecords: LiveData<List<SpeedRecord>> get() = _speedRecords
+
+    private val _caloriesRecords = MutableLiveData<List<TotalCaloriesBurnedRecord>>()
+    val caloriesRecords: LiveData<List<TotalCaloriesBurnedRecord>> get() = _caloriesRecords
+
+
     private val _dateRange = MutableLiveData<Pair<Instant, Instant>>()
     val dateRange: LiveData<Pair<Instant, Instant>> get() = _dateRange
 
     private val _timeIntervals = MutableLiveData<List<Pair<Instant, Instant>>>()
     val timeIntervals: LiveData<List<Pair<Instant, Instant>>> get() = _timeIntervals
+
+    private val _range = MutableLiveData("Week")
+    val range : LiveData<String> = _range
 
 
     val permissions = setOf(
@@ -83,7 +96,11 @@ class HealthManager(context: Context) : ViewModel() {
     )
 
     init {
-        updateDateRange("Week")
+        updateDateRange("${range.value}")
+    }
+
+    fun setRange(range: String) {
+        _range.value = range
     }
 
     suspend fun hasAllPermissions(permissions: Set<String>): Boolean {
@@ -106,8 +123,8 @@ class HealthManager(context: Context) : ViewModel() {
 
         if (range == "Day") {
             val intervals = (0 until 6).map { i ->
-                val startInterval = start.plus((i * 4).toLong(), ChronoUnit.HOURS)
-                val endInterval = start.plus(((i + 1) * 4).toLong(), ChronoUnit.HOURS)
+                val startInterval = start.plus((i * 3).toLong(), ChronoUnit.HOURS)
+                val endInterval = start.plus(((i + 1) * 3).toLong(), ChronoUnit.HOURS)
                 startInterval to endInterval
             }
             _timeIntervals.value = intervals
@@ -119,7 +136,7 @@ class HealthManager(context: Context) : ViewModel() {
 
     fun setDateRange(range: String) {
         updateDateRange(range)
-        fetchStepsData()
+//        fetchStepsData()
     }
 
     fun fetchStepsData() {
@@ -135,6 +152,55 @@ class HealthManager(context: Context) : ViewModel() {
             _stepsRecords.value = data
         }
 
+    }
+
+    fun fetchDistanceData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(DistanceRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(DistanceRecord::class, startInterval, endInterval)
+                }
+            }
+            _distanceRecords.value = data
+        }
+    }
+
+    fun fetchSpeedData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(SpeedRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(SpeedRecord::class, startInterval, endInterval)
+                }
+            }
+            _speedRecords.value = data
+        }
+    }
+
+    fun fetchCaloriesData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(TotalCaloriesBurnedRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(TotalCaloriesBurnedRecord::class, startInterval, endInterval)
+                }
+            }
+            _caloriesRecords.value = data
+        }
+    }
+
+    fun fetchAllData() {
+        fetchStepsData()
+        fetchDistanceData()
+        fetchSpeedData()
+        fetchCaloriesData()
     }
 
     private suspend fun <T : Record> readRecords(recordType: KClass<T>, start: Instant, end: Instant): List<T> {
