@@ -58,6 +58,27 @@ class HealthManager(context: Context) : ViewModel() {
     private val _caloriesRecords = MutableLiveData<List<TotalCaloriesBurnedRecord>>()
     val caloriesRecords: LiveData<List<TotalCaloriesBurnedRecord>> get() = _caloriesRecords
 
+    private val _heartRateRecords = MutableLiveData<List<HeartRateRecord>>()
+    val heartRateRecords: LiveData<List<HeartRateRecord>> get() = _heartRateRecords
+
+    private val _bloodPressureRecords = MutableLiveData<List<BloodPressureRecord>>()
+    val bloodPressureRecords: LiveData<List<BloodPressureRecord>> get() = _bloodPressureRecords
+
+    private val _respiratoryRateRecords = MutableLiveData<List<RespiratoryRateRecord>>()
+    val respiratoryRateRecords: LiveData<List<RespiratoryRateRecord>> get() = _respiratoryRateRecords
+
+    private val _oxygenSaturationRecords = MutableLiveData<List<OxygenSaturationRecord>>()
+    val oxygenSaturationRecords: LiveData<List<OxygenSaturationRecord>> get() = _oxygenSaturationRecords
+
+    private val _bodyTemperatureRecords = MutableLiveData<List<BodyTemperatureRecord>>()
+    val bodyTemperatureRecords: LiveData<List<BodyTemperatureRecord>> get() = _bodyTemperatureRecords
+
+    private val _hydrationRecords = MutableLiveData<List<HydrationRecord>>()
+    val hydrationRecords: LiveData<List<HydrationRecord>> get() = _hydrationRecords
+
+    private val _nutritionRecords = MutableLiveData<List<NutritionRecord>>()
+    val nutritionRecords: LiveData<List<NutritionRecord>> get() = _nutritionRecords
+
 
     private val _dateRange = MutableLiveData<Pair<Instant, Instant>>()
     val dateRange: LiveData<Pair<Instant, Instant>> get() = _dateRange
@@ -65,7 +86,7 @@ class HealthManager(context: Context) : ViewModel() {
     private val _timeIntervals = MutableLiveData<List<Pair<Instant, Instant>>>()
     val timeIntervals: LiveData<List<Pair<Instant, Instant>>> get() = _timeIntervals
 
-    private val _range = MutableLiveData("Week")
+    private val _range = MutableLiveData("Day")
     val range : LiveData<String> = _range
 
 
@@ -123,8 +144,8 @@ class HealthManager(context: Context) : ViewModel() {
 
         if (range == "Day") {
             val intervals = (0 until 6).map { i ->
-                val startInterval = start.plus((i * 3).toLong(), ChronoUnit.HOURS)
-                val endInterval = start.plus(((i + 1) * 3).toLong(), ChronoUnit.HOURS)
+                val startInterval = start.plus((i * 3.5).toLong(), ChronoUnit.HOURS)
+                val endInterval = start.plus(((i + 1) * 3.5).toLong(), ChronoUnit.HOURS)
                 startInterval to endInterval
             }
             _timeIntervals.value = intervals
@@ -136,7 +157,6 @@ class HealthManager(context: Context) : ViewModel() {
 
     fun setDateRange(range: String) {
         updateDateRange(range)
-//        fetchStepsData()
     }
 
     fun fetchStepsData() {
@@ -196,12 +216,120 @@ class HealthManager(context: Context) : ViewModel() {
         }
     }
 
-    fun fetchAllData() {
+    fun fetchActivityData() {
         fetchStepsData()
         fetchDistanceData()
         fetchSpeedData()
         fetchCaloriesData()
     }
+
+    fun fetchVitalsData(){
+        fetchHeartRateData()
+        fetchBloodPressureData()
+        fetchRespiratoryRateData()
+        fetchOxygenSaturationData()
+        fetchBodyTemperatureData()
+    }
+
+    fun fetchHeartRateData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(HeartRateRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(HeartRateRecord::class, startInterval, endInterval)
+                }
+            }
+            _heartRateRecords.value = data
+        }
+    }
+    fun fetchRespiratoryRateData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(RespiratoryRateRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(RespiratoryRateRecord::class, startInterval, endInterval)
+                }
+            }
+            _respiratoryRateRecords.value = data
+        }
+    }
+    fun fetchBloodPressureData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(BloodPressureRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(BloodPressureRecord::class, startInterval, endInterval)
+                }
+            }
+            _bloodPressureRecords.value = data
+        }
+    }
+    fun fetchOxygenSaturationData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(OxygenSaturationRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(OxygenSaturationRecord::class, startInterval, endInterval)
+                }
+            }
+            _oxygenSaturationRecords.value = data
+        }
+    }
+    fun fetchBodyTemperatureData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(BodyTemperatureRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(BodyTemperatureRecord::class, startInterval, endInterval)
+                }
+            }
+            _bodyTemperatureRecords.value = data
+        }
+    }
+
+    fun fetchNutritionData(){
+        fetchHydrationRecordsData()
+        fetchNutritionRecordData()
+    }
+
+    fun fetchHydrationRecordsData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(HydrationRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(HydrationRecord::class, startInterval, endInterval)
+                }
+            }
+            _hydrationRecords.value = data
+        }
+    }
+
+    fun fetchNutritionRecordData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(NutritionRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(NutritionRecord::class, startInterval, endInterval)
+                }
+            }
+            _nutritionRecords.value = data
+        }
+    }
+
 
     private suspend fun <T : Record> readRecords(recordType: KClass<T>, start: Instant, end: Instant): List<T> {
         return try {

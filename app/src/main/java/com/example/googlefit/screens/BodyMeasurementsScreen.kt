@@ -3,6 +3,7 @@ package com.example.googlefit.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Surface
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,12 +62,11 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (weightRecords.isNotEmpty()) {
-                Text(text = "Weight Records:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                weightRecords.forEach { record ->
 
-                    ContentCard("Weight Records:", "${record.weight.inKilograms} kg")
-//                    Text(text = "Weight: %.1f lbs".format(record.weight.inPounds) + "  ||  ${record.weight.inKilograms} kg")
+
+            if (weightRecords.isNotEmpty()) {
+                weightRecords.forEach { record ->
+                    ContentCard("Weight Records", "${record.weight.inKilograms} kg")
                 }
             } else {
                 Text(text = "No weight records available.")
@@ -74,9 +75,8 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
             Spacer(modifier = Modifier.height(24.dp))
 
             if (heightRecords.isNotEmpty()) {
-                Text(text = "Height Records:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 heightRecords.forEach { record ->
-                    Text(text = "Height: %.1f ft".format(record.height.inFeet))
+                    ContentCard("Height Records", "%.1f ft".format(record.height.inFeet))
                 }
             } else {
                 Text(text = "No height records available.")
@@ -84,11 +84,9 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
 
             Spacer(modifier = Modifier.height(24.dp))
 
-
             if (bodyFatRecords.isNotEmpty()) {
-                Text(text = "Body Fat Records:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 bodyFatRecords.forEach { record ->
-                    Text(text = "Body fat: ${record.percentage}")
+                    ContentCard("Body Fat Records", "${record.percentage}")
                 }
             } else {
                 Text(text = "No body fat records available.")
@@ -101,7 +99,6 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
 fun ContentCard(title : String , message  :String) {
 
     Surface {
-
         Column(modifier = Modifier.fillMaxSize()) {
 
             Column(
@@ -113,9 +110,9 @@ fun ContentCard(title : String , message  :String) {
                     .background(Color.Black, RoundedCornerShape(15.dp))
                     .padding(horizontal = 40.dp, vertical = 20.dp)
             ) {
-                Text(text = "Health Title", color = Color.White, fontSize = 24.sp)
+                Text(text = title, color = Color.White, fontSize = 24.sp ,fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(text = "Health Title", color = Color.White, fontSize = 18.sp)
+                Text(text = message, color = Color.White, fontSize = 18.sp)
             }
         }
     }

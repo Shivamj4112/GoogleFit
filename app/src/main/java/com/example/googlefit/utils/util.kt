@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter
 
 object util {
 
-    fun formatLastModifiedTime(lastModifiedTime: String, is24HourFormat: Boolean): String {
+    fun formatLastModifiedTime(lastModifiedTime: String, is24HourFormat: Boolean = false): String {
         val offsetDateTime = OffsetDateTime.parse(lastModifiedTime)
         val istOffsetDateTime = offsetDateTime.withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30))
         val timeFormatter = if (is24HourFormat) {

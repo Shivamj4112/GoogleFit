@@ -60,12 +60,14 @@ fun ActivityScreen(healthManager: HealthManager, navController: NavHostControlle
 
     val stepsRecords by healthManager.stepsRecords.observeAsState(emptyList())
     val distanceRecords by healthManager.distanceRecords.observeAsState(emptyList())
+    val speedRecords by healthManager.speedRecords.observeAsState(emptyList())
+    val caloriesRecords by healthManager.caloriesRecords.observeAsState(emptyList())
     val dateRange by healthManager.dateRange.observeAsState()
     val range by healthManager.range.observeAsState()
     val timeIntervals by healthManager.timeIntervals.observeAsState(emptyList())
 
     LaunchedEffect(dateRange) {
-        healthManager.fetchAllData()
+        healthManager.fetchActivityData()
     }
 
     Surface {
@@ -89,19 +91,19 @@ fun ActivityScreen(healthManager: HealthManager, navController: NavHostControlle
 //                )
 //            }
 
-            val speedRecords by produceState<List<SpeedRecord>>(initialValue = emptyList()) {
-                value = healthManager.readSpeedInputs(
-                    start = Instant.now().minus(30, ChronoUnit.DAYS),
-                    end = Instant.now()
-                )
-            }
+//            val speedRecords by produceState<List<SpeedRecord>>(initialValue = emptyList()) {
+//                value = healthManager.readSpeedInputs(
+//                    start = Instant.now().minus(30, ChronoUnit.DAYS),
+//                    end = Instant.now()
+//                )
+//            }
 
-            val caloriesRecords by produceState<List<TotalCaloriesBurnedRecord>>(initialValue = emptyList()) {
-                value = healthManager.readTotalCaloriesBurnedInputs(
-                    start = Instant.now().minus(30, ChronoUnit.DAYS),
-                    end = Instant.now()
-                )
-            }
+//            val caloriesRecords by produceState<List<TotalCaloriesBurnedRecord>>(initialValue = emptyList()) {
+//                value = healthManager.readTotalCaloriesBurnedInputs(
+//                    start = Instant.now().minus(30, ChronoUnit.DAYS),
+//                    end = Instant.now()
+//                )
+//            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -149,35 +151,39 @@ fun ActivityScreen(healthManager: HealthManager, navController: NavHostControlle
 
             DistanceDataContent(range = range, timeIntervals = timeIntervals, distanceRecords = distanceRecords)
 
+//            Spacer(modifier = Modifier.height(24.dp))
+//
+//            DisplayRecords(
+//                title = "Distance Records",
+//                records = distanceRecords,
+//                noDataMessage = "No distance records available."
+//            ) { record ->
+//                "Distance: %.3f km".format(record.distance.inKilometers)
+//            }
+
+            SpeedDataContent(range = range, timeIntervals = timeIntervals, speedRecords = speedRecords)
+
+//            Spacer(modifier = Modifier.height(24.dp))
+//
+//            DisplayRecords(
+//                title = "Speed Records",
+//                records = speedRecords,
+//                noDataMessage = "No speed records available."
+//            ) { record ->
+//                "Speed: %.1f km/h".format(record.samples.first().speed.inKilometersPerHour)
+//            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
-            DisplayRecords(
-                title = "Distance Records",
-                records = distanceRecords,
-                noDataMessage = "No distance records available."
-            ) { record ->
-                "Distance: %.3f km".format(record.distance.inKilometers)
-            }
+            CaloriesDataContent(range = range, timeIntervals = timeIntervals, caloriesRecords = caloriesRecords)
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            DisplayRecords(
-                title = "Speed Records",
-                records = speedRecords,
-                noDataMessage = "No speed records available."
-            ) { record ->
-                "Speed: %.1f km/h".format(record.samples.first().speed.inKilometersPerHour)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            DisplayRecords(
-                title = "Calories Records",
-                records = caloriesRecords,
-                noDataMessage = "No calories records available."
-            ) { record ->
-                "Calories: ${record.energy.inKilocalories.roundToInt()} kcal"
-            }
+//            DisplayRecords(
+//                title = "Calories Records",
+//                records = caloriesRecords,
+//                noDataMessage = "No calories records available."
+//            ) { record ->
+//                "Calories: ${record.energy.inKilocalories.roundToInt()} kcal"
+//            }
         }
     }
 }
@@ -195,7 +201,7 @@ private fun StepsDataContent(
                 listOf("4 - 8", "8 - 12", "12 - 16", "16 - 20", "20 - 24", "0 - 4")
             val intervalData = timeIntervals.mapIndexed { index, interval ->
                 val totalSteps = stepsRecords
-                    .filter { it.metadata.lastModifiedTime >= interval.first && it.metadata.lastModifiedTime < interval.second }
+                    .filter { it.endTime >= interval.first && it.endTime < interval.second }
                     .sumOf { it.count }
                     .toDouble()
                 Bars(
@@ -240,7 +246,7 @@ private fun StepsDataContent(
 
         "Week" -> {
             val groupedData = stepsRecords.groupBy {
-                OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+                OffsetDateTime.parse(it.endTime.toString())
                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             }.mapValues { entry ->
                 entry.value.sumOf { it.count }
@@ -317,19 +323,16 @@ private fun DistanceDataContent(
                 listOf("4 - 8", "8 - 12", "12 - 16", "16 - 20", "20 - 24", "0 - 4")
             val intervalData = timeIntervals.mapIndexed { index, interval ->
                 val totalDistance = distanceRecords
-                    .filter { it.metadata.lastModifiedTime >= interval.first && it.metadata.lastModifiedTime < interval.second }
+                    .filter { it.endTime >= interval.first && it.endTime < interval.second }
                     .sumOf { it.distance.inKilometers }
-
-                val formattedTotalDistance = String.format("%.3f", totalDistance)
-                Log.d("TAG", "DistanceDataContent: $formattedTotalDistance")
 
                 Bars(
                     label = intervalLabels[index],
                     values = listOf(
                         Bars.Data(
                             label = "Distance",
-                            value = formattedTotalDistance.toDouble(),
-                            color = SolidColor(Color.Green),
+                            value = totalDistance,
+                            color = SolidColor(Color.Cyan),
                             properties = BarProperties(
                                 thickness = 15.dp,
                                 spacing = 0.dp,
@@ -365,7 +368,7 @@ private fun DistanceDataContent(
 
         "Week" -> {
             val groupedData = distanceRecords.groupBy {
-                OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+                OffsetDateTime.parse(it.endTime.toString())
                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             }.mapValues { entry ->
                 entry.value.sumOf { it.distance.inKilometers }
@@ -374,7 +377,7 @@ private fun DistanceDataContent(
             val today = LocalDate.now()
             val past7Days = (6 downTo 0).map {
                 val date = today.minusDays(it.toLong())
-                date to date.format(DateTimeFormatter.ofPattern(" dd\nMMM"))
+                date to date.format(DateTimeFormatter.ofPattern("dd\nMMM"))
             }
 
             val chartData = past7Days.map { (date, label) ->
@@ -385,7 +388,7 @@ private fun DistanceDataContent(
                         Bars.Data(
                             label = "Distance",
                             value = totalSteps,
-                            color = SolidColor(Color.Green),
+                            color = SolidColor(Color.Cyan),
                             properties = BarProperties(
                                 thickness = 15.dp,
                                 spacing = 0.dp,
@@ -428,6 +431,251 @@ private fun DistanceDataContent(
         }
     }
 }
+
+@Composable
+private fun SpeedDataContent(
+    range: String?,
+    timeIntervals: List<Pair<Instant, Instant>>,
+    speedRecords: List<SpeedRecord>
+) {
+    when (range) {
+
+        "Day" -> {
+            val intervalLabels =
+                listOf("4 - 8", "8 - 12", "12 - 16", "16 - 20", "20 - 24", "0 - 4")
+            val intervalData = timeIntervals.mapIndexed { index, interval ->
+                val totalDistance = speedRecords
+                    .filter { it.endTime >= interval.first && it.endTime < interval.second }
+                    .sumOf { it.samples.first().speed.inKilometersPerHour }
+
+                Bars(
+                    label = intervalLabels[index],
+                    values = listOf(
+                        Bars.Data(
+                            label = "Speed",
+                            value = totalDistance,
+                            color = SolidColor(Color.Red),
+                            properties = BarProperties(
+                                thickness = 15.dp,
+                                spacing = 0.dp,
+                                cornerRadius = Bars.Data.Radius.Rectangle(
+                                    topRight = 10.dp,
+                                    topLeft = 10.dp
+                                )
+                            )
+                        )
+                    )
+                )
+            }
+            ColumnChart(
+                modifier = Modifier
+                    .height(250.dp)
+                    .padding(horizontal = 22.dp),
+                data = intervalData,
+                barProperties = BarProperties(
+                    cornerRadius = Bars.Data.Radius.Rectangle(
+                        topRight = 6.dp,
+                        topLeft = 6.dp
+                    ),
+                    spacing = 3.dp,
+                    thickness = 20.dp,
+                ),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        "Week" -> {
+            val groupedData = speedRecords.groupBy {
+                OffsetDateTime.parse(it.endTime.toString())
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            }.mapValues { entry ->
+                entry.value.sumOf { it.samples.first().speed.inKilometersPerHour }
+            }
+
+            val today = LocalDate.now()
+            val past7Days = (6 downTo 0).map {
+                val date = today.minusDays(it.toLong())
+                date to date.format(DateTimeFormatter.ofPattern("dd\nMMM"))
+            }
+
+            val chartData = past7Days.map { (date, label) ->
+                val totalSteps = groupedData[date.toString()] ?: 0.0
+                Bars(
+                    label = label,
+                    values = listOf(
+                        Bars.Data(
+                            label = "Speed",
+                            value = totalSteps,
+                            color = SolidColor(Color.Red),
+                            properties = BarProperties(
+                                thickness = 15.dp,
+                                spacing = 0.dp,
+                                cornerRadius = Bars.Data.Radius.Rectangle(
+                                    topRight = 4.dp,
+                                    topLeft = 3.dp
+                                )
+                            )
+                        )
+                    )
+                )
+            }
+
+            ColumnChart(
+                modifier = Modifier
+                    .height(250.dp)
+                    .padding(horizontal = 20.dp),
+                data = chartData,
+                barProperties = BarProperties(
+                    cornerRadius = Bars.Data.Radius.Rectangle(
+                        topRight = 6.dp,
+                        topLeft = 6.dp
+                    ),
+                    spacing = 3.dp,
+                    thickness = 20.dp,
+                ),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        "Month" -> {
+            CustomSpeedCalendar(
+                modifier = Modifier.padding(horizontal = 18.dp),
+                speedRecords = speedRecords
+            ) {}
+        }
+    }
+}
+
+@Composable
+private fun CaloriesDataContent(
+    range: String?,
+    timeIntervals: List<Pair<Instant, Instant>>,
+    caloriesRecords: List<TotalCaloriesBurnedRecord>
+) {
+    when (range) {
+
+        "Day" -> {
+            val intervalLabels =
+                listOf("4 - 8", "8 - 12", "12 - 16", "16 - 20", "20 - 24", "0 - 4")
+            val intervalData = timeIntervals.mapIndexed { index, interval ->
+                val totalDistance = caloriesRecords
+                    .filter { it.endTime >= interval.first && it.endTime < interval.second }
+                    .sumOf { it.energy.inKilocalories }
+
+                Bars(
+                    label = intervalLabels[index],
+                    values = listOf(
+                        Bars.Data(
+                            label = "Calories",
+                            value = totalDistance,
+                            color = SolidColor(Color.Magenta),
+                            properties = BarProperties(
+                                thickness = 15.dp,
+                                spacing = 0.dp,
+                                cornerRadius = Bars.Data.Radius.Rectangle(
+                                    topRight = 10.dp,
+                                    topLeft = 10.dp
+                                )
+                            )
+                        )
+                    )
+                )
+            }
+            ColumnChart(
+                modifier = Modifier
+                    .height(250.dp)
+                    .padding(horizontal = 22.dp),
+                data = intervalData,
+                barProperties = BarProperties(
+                    cornerRadius = Bars.Data.Radius.Rectangle(
+                        topRight = 6.dp,
+                        topLeft = 6.dp
+                    ),
+                    spacing = 3.dp,
+                    thickness = 20.dp,
+                ),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        "Week" -> {
+            val groupedData = caloriesRecords.groupBy {
+                OffsetDateTime.parse(it.endTime.toString())
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            }.mapValues { entry ->
+                entry.value.sumOf { it.energy.inKilocalories }
+            }
+
+            val today = LocalDate.now()
+            val past7Days = (6 downTo 0).map {
+                val date = today.minusDays(it.toLong())
+                date to date.format(DateTimeFormatter.ofPattern("dd\nMMM"))
+            }
+
+            val chartData = past7Days.map { (date, label) ->
+                val totalSteps = groupedData[date.toString()] ?: 0.0
+                Bars(
+                    label = label,
+                    values = listOf(
+                        Bars.Data(
+                            label = "Calories",
+                            value = totalSteps,
+                            color = SolidColor(Color.Magenta),
+                            properties = BarProperties(
+                                thickness = 15.dp,
+                                spacing = 0.dp,
+                                cornerRadius = Bars.Data.Radius.Rectangle(
+                                    topRight = 4.dp,
+                                    topLeft = 3.dp
+                                )
+                            )
+                        )
+                    )
+                )
+            }
+
+            ColumnChart(
+                modifier = Modifier
+                    .height(250.dp)
+                    .padding(horizontal = 20.dp),
+                data = chartData,
+                barProperties = BarProperties(
+                    cornerRadius = Bars.Data.Radius.Rectangle(
+                        topRight = 6.dp,
+                        topLeft = 6.dp
+                    ),
+                    spacing = 3.dp,
+                    thickness = 20.dp,
+                ),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        "Month" -> {
+            CustomCaloriesCalendar(
+                modifier = Modifier.padding(horizontal = 18.dp),
+                caloriesRecords = caloriesRecords
+            ) {}
+        }
+    }
+}
+
 
 @Composable
 fun CustomStepsCalendar(
@@ -558,7 +806,7 @@ fun CustomDistanceCalendar(
         entry.value.sumOf { it.distance.inKilometers }
     }
 
-    val totalStepsForMonth = groupedData.filterKeys {
+    val totalDistanceForMonth = groupedData.filterKeys {
         LocalDate.parse(it).month == currentMonth.month
     }.values.sum()
 
@@ -583,7 +831,235 @@ fun CustomDistanceCalendar(
                     style = MaterialTheme.typography.headlineSmall
                 )
                 Text(
-                    text = "Total Distance: %.3f".format(totalStepsForMonth),
+                    text = "Total Distance: %.3f".format(totalDistanceForMonth),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            var isCurrentMonth = currentMonth.isBefore(LocalDate.now().withDayOfMonth(1))
+            IconButton(
+                enabled = isCurrentMonth,
+                onClick = {
+                    currentMonth = currentMonth.plusMonths(1)
+                }
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrow_forward),
+                    contentDescription = "Next Month",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        val firstDayOfMonth = currentMonth.withDayOfMonth(1)
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { dayName ->
+                Box(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .padding(top = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = dayName,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        (0 until 6).forEach { week ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                (1..7).forEach { day ->
+                    val date =
+                        firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
+                    if (date.month == currentMonth.month) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { onDateClick(date) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = date.dayOfMonth.toString() , fontSize = 12.sp)
+                            val totalDistance = groupedData[date.toString()] ?: 0.0
+                            if (totalDistance > 0.0) {
+                                Text(
+                                    text = "%.3f".format(totalDistance),
+                                    modifier = Modifier
+                                        .padding(top = 22.dp)
+                                        .align(Alignment.BottomCenter),
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.size(40.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CustomSpeedCalendar(
+    modifier: Modifier = Modifier,
+    speedRecords: List<SpeedRecord>,
+    onDateClick: (LocalDate) -> Unit
+) {
+    var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
+
+    val groupedData = speedRecords.groupBy {
+        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    }.mapValues { entry ->
+        entry.value.sumOf { it.samples.first().speed.inKilometersPerHour }
+    }
+
+    val totalSpeedForMonth = groupedData.filterKeys {
+        LocalDate.parse(it).month == currentMonth.month
+    }.values.sum()
+
+    Column(modifier = modifier) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(all = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrow_back),
+                    contentDescription = "Previous Month",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    text = "Total Speed: %.3f".format(totalSpeedForMonth),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            var isCurrentMonth = currentMonth.isBefore(LocalDate.now().withDayOfMonth(1))
+            IconButton(
+                enabled = isCurrentMonth,
+                onClick = {
+                    currentMonth = currentMonth.plusMonths(1)
+                }
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrow_forward),
+                    contentDescription = "Next Month",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        val firstDayOfMonth = currentMonth.withDayOfMonth(1)
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { dayName ->
+                Box(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .padding(top = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = dayName,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        (0 until 6).forEach { week ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                (1..7).forEach { day ->
+                    val date =
+                        firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
+                    if (date.month == currentMonth.month) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { onDateClick(date) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = date.dayOfMonth.toString() , fontSize = 12.sp)
+                            val totalDistance = groupedData[date.toString()] ?: 0.0
+                            if (totalDistance > 0.0) {
+                                Text(
+                                    text = "%.3f".format(totalDistance),
+                                    modifier = Modifier
+                                        .padding(top = 22.dp)
+                                        .align(Alignment.BottomCenter),
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.size(40.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CustomCaloriesCalendar(
+    modifier: Modifier = Modifier,
+    caloriesRecords: List<TotalCaloriesBurnedRecord>,
+    onDateClick: (LocalDate) -> Unit
+) {
+    var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
+
+    val groupedData = caloriesRecords.groupBy {
+        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    }.mapValues { entry ->
+        entry.value.sumOf { it.energy.inKilocalories }
+    }
+
+    val totalCaloriesForMonth = groupedData.filterKeys {
+        LocalDate.parse(it).month == currentMonth.month
+    }.values.sum()
+
+    Column(modifier = modifier) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(all = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrow_back),
+                    contentDescription = "Previous Month",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    text = "Total Calories: %.3f".format(totalCaloriesForMonth),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
