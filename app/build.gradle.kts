@@ -89,4 +89,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
     implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
 
+    // Sdp
+    implementation("com.github.Kaaveh:sdp-compose:1.1.0")
+
 }

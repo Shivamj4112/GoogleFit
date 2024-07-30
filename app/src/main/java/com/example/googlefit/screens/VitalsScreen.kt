@@ -115,8 +115,6 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
             Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
 

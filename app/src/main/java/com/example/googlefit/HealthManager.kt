@@ -79,6 +79,8 @@ class HealthManager(context: Context) : ViewModel() {
     private val _nutritionRecords = MutableLiveData<List<NutritionRecord>>()
     val nutritionRecords: LiveData<List<NutritionRecord>> get() = _nutritionRecords
 
+    private val _sleepSessionRecords = MutableLiveData<List<SleepSessionRecord>>()
+    val sleepSessionRecords: LiveData<List<SleepSessionRecord>> get() = _sleepSessionRecords
 
     private val _dateRange = MutableLiveData<Pair<Instant, Instant>>()
     val dateRange: LiveData<Pair<Instant, Instant>> get() = _dateRange
@@ -86,7 +88,7 @@ class HealthManager(context: Context) : ViewModel() {
     private val _timeIntervals = MutableLiveData<List<Pair<Instant, Instant>>>()
     val timeIntervals: LiveData<List<Pair<Instant, Instant>>> get() = _timeIntervals
 
-    private val _range = MutableLiveData("Day")
+    private val _range = MutableLiveData("Week")
     val range : LiveData<String> = _range
 
 
@@ -159,7 +161,7 @@ class HealthManager(context: Context) : ViewModel() {
         updateDateRange(range)
     }
 
-    fun fetchStepsData() {
+   private fun fetchStepsData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -174,7 +176,7 @@ class HealthManager(context: Context) : ViewModel() {
 
     }
 
-    fun fetchDistanceData() {
+    private fun fetchDistanceData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -188,7 +190,7 @@ class HealthManager(context: Context) : ViewModel() {
         }
     }
 
-    fun fetchSpeedData() {
+    private fun fetchSpeedData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -202,7 +204,7 @@ class HealthManager(context: Context) : ViewModel() {
         }
     }
 
-    fun fetchCaloriesData() {
+    private  fun fetchCaloriesData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -231,7 +233,7 @@ class HealthManager(context: Context) : ViewModel() {
         fetchBodyTemperatureData()
     }
 
-    fun fetchHeartRateData() {
+    private fun fetchHeartRateData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -244,7 +246,7 @@ class HealthManager(context: Context) : ViewModel() {
             _heartRateRecords.value = data
         }
     }
-    fun fetchRespiratoryRateData() {
+    private fun fetchRespiratoryRateData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -257,7 +259,7 @@ class HealthManager(context: Context) : ViewModel() {
             _respiratoryRateRecords.value = data
         }
     }
-    fun fetchBloodPressureData() {
+    private fun fetchBloodPressureData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -270,7 +272,7 @@ class HealthManager(context: Context) : ViewModel() {
             _bloodPressureRecords.value = data
         }
     }
-    fun fetchOxygenSaturationData() {
+    private fun fetchOxygenSaturationData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -283,7 +285,7 @@ class HealthManager(context: Context) : ViewModel() {
             _oxygenSaturationRecords.value = data
         }
     }
-    fun fetchBodyTemperatureData() {
+    private  fun fetchBodyTemperatureData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -302,7 +304,7 @@ class HealthManager(context: Context) : ViewModel() {
         fetchNutritionRecordData()
     }
 
-    fun fetchHydrationRecordsData() {
+    private  fun fetchHydrationRecordsData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -316,7 +318,7 @@ class HealthManager(context: Context) : ViewModel() {
         }
     }
 
-    fun fetchNutritionRecordData() {
+    private  fun fetchNutritionRecordData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
             val data = if (_timeIntervals.value.isNullOrEmpty()) {
@@ -327,6 +329,25 @@ class HealthManager(context: Context) : ViewModel() {
                 }
             }
             _nutritionRecords.value = data
+        }
+    }
+
+    fun fetchSleepData(){
+        fetchSleepSession()
+    }
+
+
+    private fun fetchSleepSession() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(SleepSessionRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(SleepSessionRecord::class, startInterval, endInterval)
+                }
+            }
+            _sleepSessionRecords.value = data
         }
     }
 

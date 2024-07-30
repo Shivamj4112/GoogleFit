@@ -1,12 +1,12 @@
-package com.example.googlefit.screens
+package com.example.googlefit.screens.nutritionscreens
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import com.example.googlefit.HealthManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,10 +41,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.health.connect.client.records.HydrationRecord
 import androidx.health.connect.client.records.NutritionRecord
-import androidx.health.connect.client.records.StepsRecord
 import androidx.navigation.NavHostController
+import com.example.googlefit.HealthManager
 import com.example.googlefit.R
-import com.example.googlefit.utils.util.formatLastModifiedTime
+import com.example.googlefit.navigation.Route.NUTRITION_DETAILS_SCREEN
+import com.example.googlefit.utils.util.formateDate
+import com.example.googlefit.utils.util.getWeekday
 import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.models.BarProperties
 import ir.ehsannarmani.compose_charts.models.Bars
@@ -94,9 +95,16 @@ fun NutritionScreen(healthManager: HealthManager, navController: NavHostControll
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            HydrationDataContent(range = range , timeIntervals = timeIntervals , hydrationRecords = hydrationRecords)
-            NutritionDataContent(range = range , timeIntervals = timeIntervals , nutritionRecords = nutritionRecords)
-
+            HydrationDataContent(
+                range = range,
+                timeIntervals = timeIntervals,
+                hydrationRecords = hydrationRecords
+            )
+            NutritionDataContent(
+                range = range,
+                timeIntervals = timeIntervals,
+                nutritionRecords = nutritionRecords
+            )
 
             Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -121,20 +129,29 @@ fun NutritionScreen(healthManager: HealthManager, navController: NavHostControll
 
                             nutritionRecords.forEach { record ->
 
-                                val formattedDate = OffsetDateTime.parse(record.endTime.toString())
-                                    .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
-
-                                Box(
-                                    contentAlignment = Alignment.Center,
+                                Column(
+                                    verticalArrangement = Arrangement.Center,
                                     modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(Color.White, RoundedCornerShape(15.dp))
-                                    .padding(horizontal = 10.dp, vertical = 5.dp)
-                                ){
+                                        .fillMaxWidth()
+                                        .background(Color.White, RoundedCornerShape(15.dp))
+                                        .padding(horizontal = 15.dp, vertical = 10.dp)
+                                        .clickable(
+                                            interactionSource = MutableInteractionSource(),
+                                            indication = null
+                                        ) {
+                                            navController.navigate("$NUTRITION_DETAILS_SCREEN/${record.endTime}")
+                                        }
+                                ) {
                                     Text(
-                                        text = "$formattedDate ==> ${formatLastModifiedTime(record.endTime.toString())} ==> ${record.energy?.inKilocalories?.toInt()} Cal",
-                                        color = Color.Black,
+                                        text = "${getWeekday(record.endTime.toString())}, ${formateDate(record.endTime.toString())}",
                                         fontSize = 14.sp
+                                    )
+
+                                    Text(
+                                        text = "${record.energy?.inKilocalories?.toInt()} Cal",
+                                        color = Color.Black,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(10.dp))
@@ -153,6 +170,7 @@ fun NutritionScreen(healthManager: HealthManager, navController: NavHostControll
         }
     }
 }
+
 @Composable
 private fun HydrationDataContent(
     range: String?,
@@ -405,7 +423,7 @@ fun NutritionCalendar(
         OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.energy!!.inKilocalories}
+        entry.value.sumOf { it.energy!!.inKilocalories }
     }
 
     val totalNutritionForMonth = groupedData.filterKeys {
@@ -485,7 +503,7 @@ fun NutritionCalendar(
                                 .clickable { onDateClick(date) },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = date.dayOfMonth.toString() , fontSize = 12.sp)
+                            Text(text = date.dayOfMonth.toString(), fontSize = 12.sp)
                             val totalNutrition = groupedData[date.toString()] ?: 0.0
                             if (totalNutrition > 0.0) {
                                 Text(
@@ -600,7 +618,7 @@ fun HydrationCalendar(
                                 .clickable { onDateClick(date) },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = date.dayOfMonth.toString() , fontSize = 12.sp)
+                            Text(text = date.dayOfMonth.toString(), fontSize = 12.sp)
                             val totalHydration = groupedData[date.toString()]?.toDouble() ?: 0.0
                             if (totalHydration > 0.0) {
                                 Text(
