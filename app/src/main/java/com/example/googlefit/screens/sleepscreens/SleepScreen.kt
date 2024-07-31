@@ -129,7 +129,7 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
                             )
                             Spacer(modifier = Modifier.height(20.dp))
 
-                            sleepRecords.forEach { record ->
+                            sleepRecords.reversed().forEach { record ->
                                 val formattedDuration = formatDuration(
                                     timeDiffInSeconds(
                                         record.startTime.toString(),
@@ -217,7 +217,7 @@ private fun SleepDataContent(
                             value = "%.5f ".format(totalSleep / 3600).toDouble(),
                             color = SolidColor(Color.Green),
                             properties = BarProperties(
-                                thickness = 15.dp,
+                                thickness = 20.dp,
                                 spacing = 0.dp,
                                 cornerRadius = Bars.Data.Radius.Rectangle(
                                     topRight = 4.dp,
@@ -360,7 +360,7 @@ fun CustomSleepCalendar(
                                     modifier = Modifier
                                         .padding(top = 22.dp)
                                         .align(Alignment.BottomCenter),
-                                    fontSize = 10.sp,
+                                    fontSize = 8.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }

@@ -68,7 +68,6 @@ fun Navigation(){
             CycleTrackingScreen(healthManager,navController)
         }
 
-
         composable("$SLEEP_DETAILS_SCREEN/{startTime}/{endTime}") {
 
             val startTime = it.arguments?.getString("startTime")

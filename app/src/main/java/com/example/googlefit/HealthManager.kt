@@ -40,6 +40,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.Calendar
 import kotlin.reflect.KClass
 
 class HealthManager(context: Context) : ViewModel() {
@@ -135,26 +136,64 @@ class HealthManager(context: Context) : ViewModel() {
     }
 
     private fun updateDateRange(range: String) {
-        val now = Instant.now()
+        val calendar = Calendar.getInstance()
+        val now = calendar.time // Current time
+
         val start = when (range) {
-            "Day" -> now.truncatedTo(ChronoUnit.DAYS)
-            "Week" -> now.minus(7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS)
-            "Month" -> now.minus(30, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS)
-            else -> now.minus(7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS)
+            "Day" -> {
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                calendar.time
+            }
+            "Week" -> {
+                calendar.add(Calendar.DAY_OF_MONTH, -7)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                calendar.time
+            }
+            "Month" -> {
+                calendar.add(Calendar.DAY_OF_MONTH, -60)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                calendar.time
+            }
+            else -> {
+                calendar.add(Calendar.DAY_OF_MONTH, -7)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                calendar.time
+            }
         }
-        _dateRange.value = start to now
+        _dateRange.value = start.toInstant() to now.toInstant()
 
         if (range == "Day") {
             val intervals = (0 until 6).map { i ->
-                val startInterval = start.plus((i * 3.5).toLong(), ChronoUnit.HOURS)
-                val endInterval = start.plus(((i + 1) * 3.5).toLong(), ChronoUnit.HOURS)
-                startInterval to endInterval
-            }
+                val startInterval = Calendar.getInstance().apply {
+                    time = start
+                    add(Calendar.HOUR_OF_DAY, (i * 3.5).toInt())
+                }.time
+
+                val endInterval = Calendar.getInstance().apply {
+                    time = start
+                    add(Calendar.HOUR_OF_DAY, ((i + 1) * 3.5).toInt())
+                }.time
+
+                startInterval.toInstant() to endInterval
+                    .toInstant()            }
             _timeIntervals.value = intervals
         } else {
             _timeIntervals.value = emptyList()
         }
     }
+
 
 
     fun setDateRange(range: String) {

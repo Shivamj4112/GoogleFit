@@ -52,7 +52,6 @@ fun SleepDetailsScreen(navController: NavHostController, startTime: String, endT
 
     val duration = formatDuration(timeDiffInSeconds(startTime, endTime))
 
-
     Surface {
 
         Column(
@@ -134,8 +133,7 @@ fun SleepDetailsScreen(navController: NavHostController, startTime: String, endT
                 Text(text = "Schedule", fontSize = 12.ssp)
 
                 val list = listOf("Got in bed", "Woke up")
-                var time =
-                    listOf(formatLastModifiedTime(startTime), formatLastModifiedTime(endTime))
+                var time = listOf(formatLastModifiedTime(startTime), formatLastModifiedTime(endTime))
                 repeat(2) {
                     if (time.isNotEmpty()) {
                         ScheduleCardContent(list[it], time[it])
