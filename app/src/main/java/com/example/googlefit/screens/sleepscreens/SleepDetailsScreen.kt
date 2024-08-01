@@ -4,20 +4,12 @@ import android.annotation.SuppressLint
 import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.googlefit.R
-import com.example.googlefit.utils.DebounceClick
+import com.example.googlefit.utils.TopBar
 import com.example.googlefit.utils.util.formatDuration
 import com.example.googlefit.utils.util.formatLastModifiedTime
 import com.example.googlefit.utils.util.timeDiffInSeconds
@@ -53,34 +45,13 @@ fun SleepDetailsScreen(navController: NavHostController, startTime: String, endT
     val duration = formatDuration(timeDiffInSeconds(startTime, endTime))
 
     Surface {
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 10.sdp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(top = 10.sdp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                DebounceClick(onClick = { navController.navigateUp() }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "back"
-                    )
-                }
-
-
-                Text(text = "Sleep Details", fontWeight = FontWeight.SemiBold, fontSize = 14.ssp)
-
-                Icon(imageVector = Icons.Default.MoreVert, contentDescription = "more option")
-            }
+            TopBar(navController,"Sleep")
 
             val formattedStartTime = formatLastModifiedTime(startTime)
             val formattedEndTime = formatLastModifiedTime(endTime)
@@ -133,7 +104,8 @@ fun SleepDetailsScreen(navController: NavHostController, startTime: String, endT
                 Text(text = "Schedule", fontSize = 12.ssp)
 
                 val list = listOf("Got in bed", "Woke up")
-                var time = listOf(formatLastModifiedTime(startTime), formatLastModifiedTime(endTime))
+                var time =
+                    listOf(formatLastModifiedTime(startTime), formatLastModifiedTime(endTime))
                 repeat(2) {
                     if (time.isNotEmpty()) {
                         ScheduleCardContent(list[it], time[it])

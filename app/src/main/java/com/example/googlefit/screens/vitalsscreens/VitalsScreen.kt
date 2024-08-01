@@ -1,6 +1,7 @@
-package com.example.googlefit.screens
+package com.example.googlefit.screens.vitalsscreens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,11 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Surface
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,9 +28,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.googlefit.HealthManager
+import com.example.googlefit.data.VitalType.HEART_RATE
+import com.example.googlefit.data.VitalType.BLOOD_PRESSURE
+import com.example.googlefit.data.VitalType.RESPIRATORY_RATE
+import com.example.googlefit.data.VitalType.BODY_TEMPERATURE
+import com.example.googlefit.data.VitalType.OXYGEN_SATURATION
+import com.example.googlefit.navigation.Route.VITALS_RANGE_SCREEN
 import com.example.googlefit.utils.util.formatLastModifiedTime
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
+import com.example.googlefit.utils.util.formateDate
+import ir.kaaveh.sdpcompose.sdp
+import ir.kaaveh.sdpcompose.ssp
 
 @Composable
 fun VitalsScreen(healthManager: HealthManager, navController: NavHostController) {
@@ -54,59 +62,60 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 22.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                listOf("Day", "Week", "Month").forEach { range ->
-                    Button(onClick = {
-                        healthManager.setDateRange(range)
-                        healthManager.setRange(range)
-                    }) {
-                        Text(text = range)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
+            // Heart Rate
             Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier
                             .padding(10.dp)
                             .fillMaxWidth()
                             .background(Color.Black, RoundedCornerShape(15.dp))
-                            .padding(horizontal = 10.dp, vertical = 20.dp)
+                            .padding(horizontal = 12.sdp, vertical = 10.dp)
+                            .clickable {
+                                navController.navigate("$VITALS_RANGE_SCREEN/$HEART_RATE")
+                            }
                     ) {
                         if (heartRecords.isNotEmpty()) {
+                            val lastRecord = heartRecords.last().samples.last()
+
                             Text(
-                                text = "Heart Rate Records",
                                 color = Color.White,
-                                fontSize = 20.sp,
+                                text = "Heart Rate",
+                                fontSize = 12.ssp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                color = Color.White,
+                                text = "${formateDate(lastRecord.time.toString())} at ${
+                                    formatLastModifiedTime(
+                                        lastRecord.time.toString()
+                                    )
+                                }",
+                                fontSize = 8.ssp,
+                            )
 
-                            heartRecords.forEach { record ->
-                                val data = record.samples.first()
+                            Spacer(modifier = Modifier.height(20.dp))
 
-                                val formattedDate = OffsetDateTime.parse(data.time.toString())
-                                    .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+                            Row {
                                 Text(
-                                    text = "$formattedDate ==> ${formatLastModifiedTime(data.time.toString())} ==> ${data.beatsPerMinute} bpm",
+                                    text = lastRecord.beatsPerMinute.toString(),
                                     color = Color.White,
-                                    fontSize = 14.sp
+                                    fontSize = 17.ssp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    modifier = Modifier.padding(top = 2.sdp),
+                                    text = "bpm",
+                                    color = Color.White,
+                                    fontSize = 8.ssp
                                 )
                             }
                         } else {
                             Text(
-                                text = "No heart raterecords available.",
+                                text = "No heart rate records available.",
                                 color = Color.White,
                                 fontSize = 14.sp,
                             )
@@ -115,34 +124,54 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                 }
             }
 
+            // Blood Pressure
             Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier
                             .padding(10.dp)
                             .fillMaxWidth()
                             .background(Color.Black, RoundedCornerShape(15.dp))
-                            .padding(horizontal = 10.dp, vertical = 20.dp)
+                            .padding(horizontal = 12.sdp, vertical = 10.dp)
+                            .clickable {
+                                navController.navigate("$VITALS_RANGE_SCREEN/${BLOOD_PRESSURE}")
+                            }
                     ) {
                         if (bloodPressureRecord.isNotEmpty()) {
+                            val lastRecord = bloodPressureRecord.last()
                             Text(
                                 text = "Blood Pressure Records",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                color = Color.White,
+                                text = "${formateDate(lastRecord.time.toString())} at ${
+                                    formatLastModifiedTime(
+                                        lastRecord.time.toString()
+                                    )
+                                }",
+                                fontSize = 8.ssp,
+                            )
 
-                            bloodPressureRecord.reversed().forEach { record ->
-                                val formattedDate = OffsetDateTime.parse(record.time.toString())
-                                    .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Row {
                                 Text(
-                                    text = "$formattedDate ==> ${formatLastModifiedTime(record.time.toString())} ==> ${record.systolic.inMillimetersOfMercury.toInt()}/${record.diastolic.inMillimetersOfMercury.toInt()} mmHg",
+                                    text = "${lastRecord.systolic.inMillimetersOfMercury.toInt()}/${lastRecord.diastolic.inMillimetersOfMercury.toInt()}",
                                     color = Color.White,
-                                    fontSize = 14.sp
+                                    fontSize = 17.ssp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    modifier = Modifier.padding(top = 2.sdp),
+                                    text = "mmHg",
+                                    color = Color.White,
+                                    fontSize = 8.ssp
                                 )
                             }
                         } else {
@@ -156,36 +185,57 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                 }
             }
 
+            // Respiratory Rate
             Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier
                             .padding(10.dp)
                             .fillMaxWidth()
                             .background(Color.Black, RoundedCornerShape(15.dp))
-                            .padding(horizontal = 10.dp, vertical = 20.dp)
+                            .padding(horizontal = 12.sdp, vertical = 10.dp)
+                            .clickable {
+                                navController.navigate("$VITALS_RANGE_SCREEN/${RESPIRATORY_RATE}")
+                            }
                     ) {
                         if (respiratoryRateRecord.isNotEmpty()) {
+                            val lastRecord = respiratoryRateRecord.last()
                             Text(
-                                text = "Respiratory rate Records",
+                                text = "Respiratory Rate Records",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                color = Color.White,
+                                text = "${formateDate(lastRecord.time.toString())} at ${
+                                    formatLastModifiedTime(
+                                        lastRecord.time.toString()
+                                    )
+                                }",
+                                fontSize = 8.ssp,
+                            )
 
-                            respiratoryRateRecord.reversed().forEach { record ->
-                                val formattedDate = OffsetDateTime.parse(record.time.toString())
-                                    .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Row {
                                 Text(
-                                    text = "$formattedDate ==> ${formatLastModifiedTime(record.time.toString())} ==> ${record.rate.toInt()} rpm",
+                                    text = lastRecord.rate.toInt().toString(),
                                     color = Color.White,
-                                    fontSize = 14.sp
+                                    fontSize = 17.ssp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    modifier = Modifier.padding(top = 2.sdp),
+                                    text = "rpm",
+                                    color = Color.White,
+                                    fontSize = 8.ssp
                                 )
                             }
+
                         } else {
                             Text(
                                 text = "No respiratory rate records available.",
@@ -197,36 +247,57 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                 }
             }
 
+            // Body Temperature
             Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier
                             .padding(10.dp)
                             .fillMaxWidth()
                             .background(Color.Black, RoundedCornerShape(15.dp))
-                            .padding(horizontal = 10.dp, vertical = 20.dp)
+                            .padding(horizontal = 12.sdp, vertical = 10.dp)
+                            .clickable {
+                                navController.navigate("$VITALS_RANGE_SCREEN/${BODY_TEMPERATURE}")
+                            }
                     ) {
                         if (bodyTemperatureRecord.isNotEmpty()) {
+                            val lastRecord = bodyTemperatureRecord.last()
                             Text(
-                                text = "Body temperature Records",
+                                text = "Body Temperature Records",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                color = Color.White,
+                                text = "${formateDate(lastRecord.time.toString())} at ${
+                                    formatLastModifiedTime(
+                                        lastRecord.time.toString()
+                                    )
+                                }",
+                                fontSize = 8.ssp,
+                            )
 
-                            bodyTemperatureRecord.reversed().forEach { record ->
-                                val formattedDate = OffsetDateTime.parse(record.time.toString())
-                                    .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Row {
                                 Text(
-                                    text = "$formattedDate ==> ${formatLastModifiedTime(record.time.toString())} ==> %.1f °F".format(record.temperature.inFahrenheit),
+                                    text = lastRecord.temperature.inFahrenheit.toInt().toString(),
                                     color = Color.White,
-                                    fontSize = 14.sp
+                                    fontSize = 17.ssp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    modifier = Modifier.padding(top = 2.sdp),
+                                    text = "°F",
+                                    color = Color.White,
+                                    fontSize = 8.ssp
                                 )
                             }
+
                         } else {
                             Text(
                                 text = "No body temperature records available.",
@@ -238,36 +309,48 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                 }
             }
 
+            // Oxygen Saturation
             Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier
                             .padding(10.dp)
                             .fillMaxWidth()
                             .background(Color.Black, RoundedCornerShape(15.dp))
-                            .padding(horizontal = 10.dp, vertical = 20.dp)
+                            .padding(horizontal = 12.sdp, vertical = 10.dp)
+                            .clickable {
+                                navController.navigate("$VITALS_RANGE_SCREEN/${OXYGEN_SATURATION}")
+                            }
                     ) {
                         if (oxygenRecords.isNotEmpty()) {
+                            val lastRecord = oxygenRecords.last()
                             Text(
                                 text = "Oxygen Records",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                color = Color.White,
+                                text = "${formateDate(lastRecord.time.toString())} at ${
+                                    formatLastModifiedTime(
+                                        lastRecord.time.toString()
+                                    )
+                                }",
+                                fontSize = 8.ssp,
+                            )
 
-                            oxygenRecords.reversed().forEach { record ->
-                                val formattedDate = OffsetDateTime.parse(record.time.toString())
-                                    .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
-                                Text(
-                                    text = "$formattedDate ==> ${formatLastModifiedTime(record.time.toString())} ==> ${record.percentage.value.toInt()}%",
-                                    color = Color.White,
-                                    fontSize = 14.sp
-                                )
-                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Text(
+                                text = "${lastRecord.percentage.value.toInt()}%",
+                                color = Color.White,
+                                fontSize = 17.ssp,
+                                fontWeight = FontWeight.Bold
+                            )
+
                         } else {
                             Text(
                                 text = "No oxygen records available.",
@@ -281,3 +364,4 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
         }
     }
 }
+

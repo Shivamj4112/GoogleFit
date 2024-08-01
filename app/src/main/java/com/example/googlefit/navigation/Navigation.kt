@@ -14,6 +14,8 @@ import com.example.googlefit.navigation.Route.NUTRITION_DETAILS_SCREEN
 import com.example.googlefit.navigation.Route.NUTRITION_SCREEN
 import com.example.googlefit.navigation.Route.SLEEP_DETAILS_SCREEN
 import com.example.googlefit.navigation.Route.SLEEP_SCREEN
+import com.example.googlefit.navigation.Route.VITALS_DETAILS_SCREEN
+import com.example.googlefit.navigation.Route.VITALS_RANGE_SCREEN
 import com.example.googlefit.navigation.Route.VITALS_SCREEN
 import com.example.googlefit.screens.ActivityScreen
 import com.example.googlefit.screens.BodyMeasurementsScreen
@@ -21,9 +23,11 @@ import com.example.googlefit.screens.CycleTrackingScreen
 import com.example.googlefit.screens.MainScreen
 import com.example.googlefit.screens.nutritionscreens.NutritionScreen
 import com.example.googlefit.screens.sleepscreens.SleepScreen
-import com.example.googlefit.screens.VitalsScreen
+import com.example.googlefit.screens.vitalsscreens.VitalsScreen
 import com.example.googlefit.screens.nutritionscreens.NutritionDetailsScreen
 import com.example.googlefit.screens.sleepscreens.SleepDetailsScreen
+import com.example.googlefit.screens.vitalsscreens.VitalsDateRangeScreen
+import com.example.googlefit.screens.vitalsscreens.VitalsDetailsScreen
 
 object Route {
 
@@ -36,6 +40,8 @@ object Route {
     const val CYCLE_SCREEN = "cycle_screen"
     const val SLEEP_DETAILS_SCREEN = "sleep_details_screen"
     const val NUTRITION_DETAILS_SCREEN = "nutrition_details_screen"
+    const val VITALS_DETAILS_SCREEN = "vitals_details_screen"
+    const val VITALS_RANGE_SCREEN = "vitals_range_screen"
 }
 
 @Composable
@@ -69,21 +75,33 @@ fun Navigation(){
         }
 
         composable("$SLEEP_DETAILS_SCREEN/{startTime}/{endTime}") {
-
             val startTime = it.arguments?.getString("startTime")
             val endTime = it.arguments?.getString("endTime")
 
             if (startTime != null && endTime != null) {
                 SleepDetailsScreen(navController, startTime, endTime)
             }
-
         }
-
 
         composable("$NUTRITION_DETAILS_SCREEN/{endTime}") {
             val endTime = it.arguments?.getString("endTime")
             if (endTime != null) {
                 NutritionDetailsScreen(healthManager,navController, endTime)
+            }
+        }
+
+        composable("$VITALS_RANGE_SCREEN/{vitals}") {
+            val vitals = it.arguments?.getString("vitals")
+            if (vitals != null) {
+                VitalsDateRangeScreen(healthManager, navController, vitals)
+            }
+        }
+        composable("$VITALS_DETAILS_SCREEN/{vitals}/{time}") {
+            val vitals = it.arguments?.getString("vitals")
+            val time = it.arguments?.getString("time")
+
+            if (vitals != null && time != null) {
+                VitalsDetailsScreen(healthManager, navController, vitals, time)
             }
         }
     }

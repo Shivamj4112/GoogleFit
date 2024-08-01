@@ -27,6 +27,7 @@ import androidx.health.connect.client.records.NutritionRecord
 import androidx.navigation.NavHostController
 import com.example.googlefit.HealthManager
 import com.example.googlefit.utils.DebounceClick
+import com.example.googlefit.utils.TopBar
 import com.example.googlefit.utils.util.formatLastModifiedTime
 import com.example.googlefit.utils.util.formateDate
 import ir.ehsannarmani.compose_charts.PieChart
@@ -49,7 +50,7 @@ fun NutritionDetailsScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            TopBar(navController = navController)
+            TopBar(navController, "Nutrition")
 
             val record = nutritionRecords.find { it.endTime.toString() == endTime }
             record?.let { nutritionRecord ->
@@ -59,32 +60,6 @@ fun NutritionDetailsScreen(
     }
 }
 
-@Composable
-fun TopBar(navController: NavHostController) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .padding(top = 10.sdp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        DebounceClick(onClick = { navController.navigateUp() }) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "back"
-            )
-        }
-
-        Text(
-            text = "Nutrition Details",
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 14.ssp
-        )
-
-        Icon(imageVector = Icons.Default.MoreVert, contentDescription = "more option")
-    }
-}
 
 @Composable
 fun NutritionDetails(nutritionRecord: NutritionRecord) {

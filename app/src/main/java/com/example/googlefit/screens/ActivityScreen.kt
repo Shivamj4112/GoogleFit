@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.health.connect.client.records.CyclingPedalingCadenceRecord
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.SpeedRecord
 import androidx.health.connect.client.records.StepsRecord
@@ -49,6 +50,7 @@ import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.navigation.NavHostController
 import com.example.googlefit.HealthManager
 import com.example.googlefit.R
+import com.example.googlefit.utils.DateRange
 import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.models.BarProperties
 import ir.ehsannarmani.compose_charts.models.Bars
@@ -66,6 +68,7 @@ fun ActivityScreen(healthManager: HealthManager, navController: NavHostControlle
     val distanceRecords by healthManager.distanceRecords.observeAsState(emptyList())
     val speedRecords by healthManager.speedRecords.observeAsState(emptyList())
     val caloriesRecords by healthManager.caloriesRecords.observeAsState(emptyList())
+    val cyclingRecords by healthManager.cyclingRecords.observeAsState(emptyList())
     val dateRange by healthManager.dateRange.observeAsState()
     val range by healthManager.range.observeAsState()
     val timeIntervals by healthManager.timeIntervals.observeAsState(emptyList())
@@ -81,27 +84,9 @@ fun ActivityScreen(healthManager: HealthManager, navController: NavHostControlle
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
+            DateRange(healthManager)
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 22.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                listOf("Day", "Week", "Month").forEach { range ->
-                    Button(onClick = {
-                        healthManager.setDateRange(range)
-                        healthManager.setRange(range)
-                    }) {
-                        Text(text = range)
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-
-            ActivityContent(range, timeIntervals, stepsRecords, caloriesRecords,distanceRecords, speedRecords)
+            ActivityContent(range, timeIntervals, stepsRecords, caloriesRecords,distanceRecords,cyclingRecords, speedRecords)
 
 
         }
@@ -115,13 +100,16 @@ private fun ActivityContent(
     stepsRecords: List<StepsRecord>,
     caloriesRecords: List<TotalCaloriesBurnedRecord>,
     distanceRecords: List<DistanceRecord>,
+    cyclingRecords: List<CyclingPedalingCadenceRecord>,
     speedRecords: List<SpeedRecord>
 ) {
     var showDetailsDialog by remember { mutableStateOf(false) }
     var totalSteps by remember { mutableStateOf("") }
     var totalCalories by remember { mutableStateOf(0.0) }
     var totalDistance by remember { mutableStateOf(0.0) }
+    var totalCycling by remember { mutableStateOf(0.0) }
     var totalSpeed by remember { mutableStateOf(0.0) }
+    var totalWheel by remember { mutableStateOf(0.0) }
 
     when (range) {
         "Day" -> {
@@ -174,7 +162,7 @@ private fun ActivityContent(
             }
             ColumnChart(
                 modifier = Modifier
-                    .height(250.dp)
+                    .height(250.sdp)
                     .padding(horizontal = 22.dp),
                 data = intervalData,
                 barProperties = BarProperties(
@@ -191,8 +179,6 @@ private fun ActivityContent(
                 )
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
             val intervalData2 = timeIntervals.mapIndexed { index, interval ->
                 val totalDistance = distanceRecords
                     .filter { it.endTime >= interval.first && it.endTime < interval.second }
@@ -201,6 +187,10 @@ private fun ActivityContent(
                 val totalSpeed = speedRecords
                     .filter { it.endTime >= interval.first && it.endTime < interval.second }
                     .sumOf { it.samples.first().speed.inKilometersPerHour }
+
+                val totalCycling = cyclingRecords
+                    .filter { it.endTime >= interval.first && it.endTime < interval.second }
+                    .sumOf { it.samples.first().revolutionsPerMinute }
 
                 Bars(
                     label = intervalLabels[index],
@@ -230,13 +220,30 @@ private fun ActivityContent(
                                     topLeft = 2.dp
                                 )
                             )
-                        )
+                        ),
+                        Bars.Data(
+                            label = "Cycling",
+                            value = totalCycling,
+                            color = SolidColor(Color.Black),
+                            properties = BarProperties(
+                                thickness = 8.dp,
+                                spacing = 0.dp,
+                                cornerRadius = Bars.Data.Radius.Rectangle(
+                                    topRight = 2.dp,
+                                    topLeft = 2.dp
+                                )
+                            )
+                        ),
+
                     )
                 )
             }
+            Spacer(modifier = Modifier.height(30.sdp))
+
+
             ColumnChart(
                 modifier = Modifier
-                    .height(250.dp)
+                    .height(250.sdp)
                     .padding(horizontal = 22.dp),
                 data = intervalData2,
                 barProperties = BarProperties(
@@ -268,6 +275,10 @@ private fun ActivityContent(
                 entry.value.sumOf { it.distance.inKilometers }
             }
 
+            val cyclingGroupedData = cyclingRecords.groupBy { OffsetDateTime.parse(it.endTime.toString()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) }.mapValues { entry ->
+                entry.value.sumOf { it.samples.first().revolutionsPerMinute }
+            }
+
             val speedGroupedData = speedRecords.groupBy { OffsetDateTime.parse(it.endTime.toString()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) }.mapValues { entry ->
                 entry.value.sumOf { it.samples.first().speed.inKilometersPerHour }
             }
@@ -283,8 +294,6 @@ private fun ActivityContent(
                 val totalSteps = stepsGroupData[date.toString()]?.toDouble() ?: 0.0
                 val totalCalories = caloriesGroupedData[date.toString()] ?: 0.0
 
-
-                Log.d("DataContent", "DataContent: $totalSteps => $label")
                 Bars(
                     label = label,
                     values = listOf(
@@ -313,7 +322,8 @@ private fun ActivityContent(
                                     topLeft = 2.dp
                                 )
                             )
-                        )
+                        ),
+
 
                     )
                 )
@@ -323,6 +333,8 @@ private fun ActivityContent(
             val chartData2 = past7Days.map { (date, label) ->
                 val totalDistance = distanceGroupedData[date.toString()] ?: 0.0
                 val totalSpeed = speedGroupedData[date.toString()] ?: 0.0
+                val totalCycling = cyclingGroupedData[date.toString()] ?: 0.0
+
                 Bars(
                     label = label,
                     values = listOf(
@@ -351,6 +363,19 @@ private fun ActivityContent(
                                     topLeft = 2.dp
                                 )
                             )
+                        ),
+                        Bars.Data(
+                            label = "Cycling",
+                            value = totalCycling,
+                            color = SolidColor(Color.DarkGray),
+                            properties = BarProperties(
+                                thickness = 8.dp,
+                                spacing = 0.dp,
+                                cornerRadius = Bars.Data.Radius.Rectangle(
+                                    topRight = 2.dp,
+                                    topLeft = 2.dp
+                                )
+                            )
                         )
                     )
                 )
@@ -358,7 +383,7 @@ private fun ActivityContent(
 
             ColumnChart(
                 modifier = Modifier
-                    .height(250.dp)
+                    .height(250.sdp)
                     .padding(horizontal = 20.dp),
                 data = chartData,
                 barProperties = BarProperties(
@@ -375,9 +400,11 @@ private fun ActivityContent(
                 )
             )
 
+            Spacer(modifier = Modifier.height(30.sdp))
+
             ColumnChart(
                 modifier = Modifier
-                    .height(250.dp)
+                    .height(250.sdp)
                     .padding(horizontal = 20.dp),
                 data = chartData2,
                 barProperties = BarProperties(
@@ -405,11 +432,13 @@ private fun ActivityContent(
                 caloriesRecords = caloriesRecords,
                 distanceRecords = distanceRecords,
                 speedRecords = speedRecords,
-            ) {steps, calories , distance, speed ->
+                cyclingRecords = cyclingRecords,
+            ) {steps, calories , distance,cycling, speed ->
                 showDetailsDialog = true
                 totalSteps = steps.toString()
                 totalCalories = calories
                 totalDistance = distance
+                totalCycling = cycling
                 totalSpeed = speed
             }
         }
@@ -439,7 +468,8 @@ private fun ActivityContent(
                     "Steps" to totalSteps,
                     "Calories" to totalCalories,
                     "Distance" to totalDistance,
-                    "Speed" to totalSpeed
+                    "Cycling" to totalCycling,
+                    "Speed" to totalSpeed,
                 )
 
                 Spacer(modifier = Modifier.height(10.sdp))
@@ -450,6 +480,7 @@ private fun ActivityContent(
                     var newValue = when (label) {
                         "Calories" -> "%.2f Cal".format(value)
                         "Distance" -> "%.2f km".format(value)
+                        "Cycling" -> "%.2f km".format(value)
                         "Speed" -> "%.2f km/h".format(value)
                         else -> "$value steps"
 
@@ -457,7 +488,9 @@ private fun ActivityContent(
 
                     Row (
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
                     ){
                         Text(text = label)
                         Text(text = newValue  )
@@ -486,7 +519,8 @@ fun CustomCalendar(
     caloriesRecords: List<TotalCaloriesBurnedRecord>,
     distanceRecords: List<DistanceRecord>,
     speedRecords: List<SpeedRecord>,
-    onDateClick: (Double, Double , Double , Double) -> Unit
+    cyclingRecords : List<CyclingPedalingCadenceRecord>,
+    onDateClick: (Double, Double , Double,Double , Double) -> Unit
 ) {
     val daysInMonth = LocalDate.now().lengthOfMonth()
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
@@ -502,6 +536,10 @@ fun CustomCalendar(
     val distanceGroupedData = distanceRecords.groupBy { OffsetDateTime.parse(it.metadata.lastModifiedTime.toString()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) }.mapValues { entry ->
         entry.value.sumOf { it.distance.inKilometers }
     }
+    val cyclingGroupedData = cyclingRecords.groupBy { OffsetDateTime.parse(it.metadata.lastModifiedTime.toString()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) }.mapValues { entry ->
+        entry.value.sumOf { it.samples.first().revolutionsPerMinute }
+    }
+
     val speedGroupedData = speedRecords.groupBy { OffsetDateTime.parse(it.metadata.lastModifiedTime.toString()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) }.mapValues { entry ->
         entry.value.sumOf { it.samples.first().speed.inKilometersPerHour }
     }
@@ -514,6 +552,7 @@ fun CustomCalendar(
 
     val totalDistanceForMonth =
         distanceGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
+
 
     val totalSpeedForMonth =
         speedGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
@@ -602,6 +641,7 @@ fun CustomCalendar(
                     val totalSteps = stepsGroupedData[date.toString()]?.toDouble() ?: 0.0
                     val totalCalories = caloriesGroupedData[date.toString()] ?: 0.0
                     val totalDistance = distanceGroupedData[date.toString()] ?: 0.0
+                    val totalCycling = cyclingGroupedData[date.toString()] ?: 0.0
                     val totalSpeed = speedGroupedData[date.toString()] ?: 0.0
 
                     if (date.month == currentMonth.month) {
@@ -609,7 +649,13 @@ fun CustomCalendar(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clickable {
-                                    onDateClick(totalSteps, totalCalories,totalDistance, totalSpeed)
+                                    onDateClick(
+                                        totalSteps,
+                                        totalCalories,
+                                        totalDistance,
+                                        totalCycling,
+                                        totalSpeed
+                                    )
                                 },
                             contentAlignment = Alignment.Center
                         ) {

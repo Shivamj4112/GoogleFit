@@ -31,6 +31,7 @@ import androidx.health.connect.client.records.SpeedRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.records.WheelchairPushesRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.lifecycle.LiveData
@@ -53,6 +54,14 @@ class HealthManager(context: Context) : ViewModel() {
     private val _distanceRecords = MutableLiveData<List<DistanceRecord>>()
     val distanceRecords: LiveData<List<DistanceRecord>> get() = _distanceRecords
 
+    //
+    private val _cyclingRecords = MutableLiveData<List<CyclingPedalingCadenceRecord>>()
+    val cyclingRecords: LiveData<List<CyclingPedalingCadenceRecord>> get() = _cyclingRecords
+
+    private val _wheelSpeedRecords = MutableLiveData<List<WheelchairPushesRecord>>()
+    val wheelSpeedRecords: LiveData<List<WheelchairPushesRecord>> get() = _wheelSpeedRecords
+
+    //
     private val _speedRecords = MutableLiveData<List<SpeedRecord>>()
     val speedRecords: LiveData<List<SpeedRecord>> get() = _speedRecords
 
@@ -228,6 +237,32 @@ class HealthManager(context: Context) : ViewModel() {
             _distanceRecords.value = data
         }
     }
+    private fun fetchCyclingData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(CyclingPedalingCadenceRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(CyclingPedalingCadenceRecord::class, startInterval, endInterval)
+                }
+            }
+            _cyclingRecords.value = data
+        }
+    }
+    private fun fetchWheelChairData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(WheelchairPushesRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(WheelchairPushesRecord::class, startInterval, endInterval)
+                }
+            }
+            _wheelSpeedRecords.value = data
+        }
+    }
 
     private fun fetchSpeedData() {
         viewModelScope.launch {
@@ -260,6 +295,8 @@ class HealthManager(context: Context) : ViewModel() {
     fun fetchActivityData() {
         fetchStepsData()
         fetchDistanceData()
+        fetchCyclingData()
+        fetchWheelChairData()
         fetchSpeedData()
         fetchCaloriesData()
     }

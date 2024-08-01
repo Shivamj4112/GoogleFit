@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,19 +30,15 @@ import com.example.googlefit.navigation.Route
 @Composable
 fun MainScreen(healthManager: HealthManager, navController: NavHostController) {
 
-    var allPermissionsGranted by remember { mutableStateOf(false) }
+    var allPermissionsGranted by remember { mutableStateOf<Boolean?>(null) }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = healthManager.requestPermissionsActivityContract()
     ) { result: Set<String> ->
-
-        val allPermissionsGranted = result.containsAll(healthManager.permissions)
-        if (allPermissionsGranted) {
-
-        } else {
-
-        }
+        allPermissionsGranted = result.containsAll(healthManager.permissions)
     }
 
+    // Check permissions when the screen is launched
     LaunchedEffect(Unit) {
         allPermissionsGranted = healthManager.hasAllPermissions(healthManager.permissions)
     }
@@ -54,64 +51,71 @@ fun MainScreen(healthManager: HealthManager, navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-
-            if (!allPermissionsGranted) {
-                Text(text = "Request Health Permissions")
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(onClick = {
-                    permissionLauncher.launch(healthManager.permissions)
-                }) {
-                    Text(text = "Request Permissions")
+            when (allPermissionsGranted) {
+                null -> {
+                    // Show a loading indicator while checking permissions
+//                    CircularProgressIndicator()
                 }
-            } else {
+                false -> {
+                    // Show the "Request Permissions" UI
+                    Text(text = "Request Health Permissions")
 
-                Button(onClick = {
-                    navController.navigate(Route.ACTIVITY_SCREEN)
-                }) {
-                    Text(text = "Activity")
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(onClick = {
+                        permissionLauncher.launch(healthManager.permissions)
+                    }) {
+                        Text(text = "Request Permissions")
+                    }
                 }
+                true -> {
+                    Button(onClick = {
+                        navController.navigate(Route.ACTIVITY_SCREEN)
+                    }) {
+                        Text(text = "Activity")
+                    }
 
-                Button(onClick = {
-                    navController.navigate(Route.BODY_MEASUREMENTS_SCREEN)
-                }) {
-                    Text(text = "Body Measurements")
+                    Button(onClick = {
+                        navController.navigate(Route.BODY_MEASUREMENTS_SCREEN)
+                    }) {
+                        Text(text = "Body Measurements")
+                    }
+
+                    Button(onClick = {
+                        navController.navigate(Route.VITALS_SCREEN)
+                    }) {
+                        Text(text = "Vitals")
+                    }
+
+                    Button(onClick = {
+                        navController.navigate(Route.NUTRITION_SCREEN)
+                    }) {
+                        Text(text = "Nutrition")
+                    }
+
+                    Button(onClick = {
+                        navController.navigate(Route.SLEEP_SCREEN)
+                    }) {
+                        Text(text = "Sleep")
+                    }
+
+                    Button(onClick = {
+                        navController.navigate(Route.CYCLE_SCREEN)
+                    }) {
+                        Text(text = "Cycle tracking")
+                    }
                 }
-
-                Button(onClick = {
-                    navController.navigate(Route.VITALS_SCREEN)
-                }) {
-                    Text(text = "Vitals")
-                }
-
-                Button(onClick = {
-                    navController.navigate(Route.NUTRITION_SCREEN)
-                }) {
-                    Text(text = "Nutrition")
-                }
-
-                Button(onClick = {
-                    navController.navigate(Route.SLEEP_SCREEN)
-                }) {
-                    Text(text = "Sleep")
-                }
-
-                Button(onClick = {
-                    navController.navigate(Route.CYCLE_SCREEN)
-                }) {
-                    Text(text = "Cycle tracking")
-                }
-
             }
         }
     }
-
 }
 
 @Preview
 @Composable
 fun MainPreview() {
-    MainScreen(healthManager = HealthManager(LocalContext.current), navController = NavHostController(LocalContext.current)
+    MainScreen(
+        healthManager = HealthManager(LocalContext.current),
+        navController = NavHostController(LocalContext.current)
     )
 }
+
