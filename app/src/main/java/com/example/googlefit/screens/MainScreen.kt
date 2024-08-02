@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -16,21 +17,58 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.googlefit.navigation.Route
+import kotlinx.coroutines.delay
+import java.util.Calendar
+import java.util.TimeZone
+import kotlin.math.abs
 
 @Composable
 fun MainScreen(healthManager: HealthManager, navController: NavHostController) {
 
     var allPermissionsGranted by remember { mutableStateOf<Boolean?>(null) }
+    var showTimeWarning by remember { mutableStateOf(false) }
+
+    val range = healthManager.range.observeAsState()
+
+    LaunchedEffect(Unit) {
+        val deviceTime = Calendar.getInstance().timeInMillis
+
+        // Get current time in Indian Standard Time (IST)
+        val istCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata"))
+        val istTime = istCalendar.timeInMillis
+
+        // Compare both date and time
+        val deviceCalendar = Calendar.getInstance()
+        val dateMismatch = deviceCalendar.get(Calendar.YEAR) != istCalendar.get(Calendar.YEAR) ||
+                deviceCalendar.get(Calendar.MONTH) != istCalendar.get(Calendar.MONTH) ||
+                deviceCalendar.get(Calendar.DAY_OF_MONTH) != istCalendar.get(Calendar.DAY_OF_MONTH)
+
+        val timeMismatch = abs(deviceTime - istTime) > ALLOWED_TIME_DIFFERENCE
+
+        if (dateMismatch || timeMismatch) {
+            showTimeWarning = true
+        }
+    }
+
+    LaunchedEffect(showTimeWarning) {
+        if (!showTimeWarning) {
+            delay(50)
+            healthManager.setRange("Week")
+            healthManager.setDateRange("Week")
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = healthManager.requestPermissionsActivityContract()
@@ -38,7 +76,6 @@ fun MainScreen(healthManager: HealthManager, navController: NavHostController) {
         allPermissionsGranted = result.containsAll(healthManager.permissions)
     }
 
-    // Check permissions when the screen is launched
     LaunchedEffect(Unit) {
         allPermissionsGranted = healthManager.hasAllPermissions(healthManager.permissions)
     }
@@ -51,9 +88,16 @@ fun MainScreen(healthManager: HealthManager, navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
+            if (showTimeWarning) {
+                Text(
+                    text = "Please correct the time and date on your device",
+                    color = Color.Red,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
             when (allPermissionsGranted) {
                 null -> {
-                    // Show a loading indicator while checking permissions
 //                    CircularProgressIndicator()
                 }
                 false -> {
@@ -118,4 +162,8 @@ fun MainPreview() {
         navController = NavHostController(LocalContext.current)
     )
 }
+
+private const val ALLOWED_TIME_DIFFERENCE = 5 * 60 * 1000L // 5 minutes in milliseconds
+
+
 

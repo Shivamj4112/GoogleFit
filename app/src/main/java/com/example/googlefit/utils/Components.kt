@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -86,7 +87,7 @@ fun TopBar(navController: NavHostController,title : String) {
 
         Text(text = "$title Details", fontWeight = FontWeight.SemiBold, fontSize = 14.ssp)
 
-        Icon(imageVector = Icons.Default.MoreVert, contentDescription = "more option")
+        Icon(imageVector = Icons.Default.MoreVert, contentDescription = "more option" , modifier = Modifier.alpha(0f))
     }
 }
 
@@ -95,6 +96,8 @@ fun DateRange(healthManager: HealthManager) {
 
     Spacer(modifier = Modifier.height(5.dp))
 
+    val selectedRange = healthManager.range.value.toString()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,15 +105,19 @@ fun DateRange(healthManager: HealthManager) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         listOf("Day", "Week", "Month").forEach { range ->
-            Button(onClick = {
-                healthManager.setDateRange(range)
-                healthManager.setRange(range)
-            }) {
+            Button(
+                onClick = {
+                    if (selectedRange != range) {
+                        healthManager.setDateRange(range)
+                        healthManager.setRange(range)
+                    }
+                },
+                enabled = selectedRange != range
+            ) {
                 Text(text = range)
             }
         }
     }
 
-    Spacer(modifier = Modifier.height(5.dp))
-
+    Spacer(modifier = Modifier.height(24.dp))
 }

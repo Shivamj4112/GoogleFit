@@ -92,4 +92,6 @@ dependencies {
     // Sdp
     implementation("com.github.Kaaveh:sdp-compose:1.1.0")
 
+    implementation("com.github.jaikeerthick:Composable-Graphs:1.2.3")
+
 }

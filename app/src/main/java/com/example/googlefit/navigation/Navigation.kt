@@ -8,6 +8,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.googlefit.navigation.Route.ACTIVITY_SCREEN
 import com.example.googlefit.navigation.Route.BODY_MEASUREMENTS_SCREEN
+import com.example.googlefit.navigation.Route.BODY_MEASUREMENT_DETAILS_SCREEN
+import com.example.googlefit.navigation.Route.BODY_MEASUREMENT_RANGE_SCREEN
 import com.example.googlefit.navigation.Route.CYCLE_SCREEN
 import com.example.googlefit.navigation.Route.MAIN_SCREEN
 import com.example.googlefit.navigation.Route.NUTRITION_DETAILS_SCREEN
@@ -18,9 +20,11 @@ import com.example.googlefit.navigation.Route.VITALS_DETAILS_SCREEN
 import com.example.googlefit.navigation.Route.VITALS_RANGE_SCREEN
 import com.example.googlefit.navigation.Route.VITALS_SCREEN
 import com.example.googlefit.screens.ActivityScreen
-import com.example.googlefit.screens.BodyMeasurementsScreen
+import com.example.googlefit.screens.bodymeasurscreens.BodyMeasurementsScreen
 import com.example.googlefit.screens.CycleTrackingScreen
 import com.example.googlefit.screens.MainScreen
+import com.example.googlefit.screens.bodymeasurscreens.BodyMeasurDateRangeScreen
+import com.example.googlefit.screens.bodymeasurscreens.BodyMeasurementDetailsScreen
 import com.example.googlefit.screens.nutritionscreens.NutritionScreen
 import com.example.googlefit.screens.sleepscreens.SleepScreen
 import com.example.googlefit.screens.vitalsscreens.VitalsScreen
@@ -42,6 +46,9 @@ object Route {
     const val NUTRITION_DETAILS_SCREEN = "nutrition_details_screen"
     const val VITALS_DETAILS_SCREEN = "vitals_details_screen"
     const val VITALS_RANGE_SCREEN = "vitals_range_screen"
+    const val BODY_MEASUREMENT_SCREEN = "body_measurement_screen"
+    const val BODY_MEASUREMENT_RANGE_SCREEN = "body_measurement_range_screen"
+    const val BODY_MEASUREMENT_DETAILS_SCREEN = "body_measurement_details_screen"
 }
 
 @Composable
@@ -104,6 +111,23 @@ fun Navigation(){
                 VitalsDetailsScreen(healthManager, navController, vitals, time)
             }
         }
+
+        composable("$BODY_MEASUREMENT_RANGE_SCREEN/{measurement}") {
+            val measurement = it.arguments?.getString("measurement")
+            if (measurement != null) {
+                BodyMeasurDateRangeScreen(healthManager, navController, measurement)
+            }
+        }
+
+        composable("$BODY_MEASUREMENT_DETAILS_SCREEN/{measurement}/{time}") {
+            val measurement = it.arguments?.getString("measurement")
+            val time = it.arguments?.getString("time")
+
+            if (measurement != null && time != null) {
+                BodyMeasurementDetailsScreen(healthManager, navController, measurement, time)
+            }
+        }
+
     }
 
 }

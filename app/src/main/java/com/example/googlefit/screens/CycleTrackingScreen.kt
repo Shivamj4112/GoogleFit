@@ -21,6 +21,7 @@ import com.example.googlefit.HealthManager
 @Composable
 fun CycleTrackingScreen(healthManager: HealthManager, navController: NavHostController) {
 
+
     Surface {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -29,26 +30,26 @@ fun CycleTrackingScreen(healthManager: HealthManager, navController: NavHostCont
                 .verticalScroll(rememberScrollState())
         ) {
 
-            val cyclingCadence by produceState<List<CervicalMucusRecord>>(initialValue = emptyList()) {
-                value = healthManager.readCyclePedalingCadence(
-                    start = java.time.Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS),
-                    end = java.time.Instant.now()
-                )
-            }
+//            val cyclingCadence by produceState<List<CervicalMucusRecord>>(initialValue = emptyList()) {
+//                value = healthManager.readCyclePedalingCadence(
+//                    start = java.time.Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS),
+//                    end = java.time.Instant.now()
+//                )
+//            }
 
 
-            if (cyclingCadence.isNotEmpty()) {
-                Text(
-                    text = "Cycling Cadence Records:",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-                cyclingCadence.forEach { record ->
-                    Text(text = "Cycling Cadence Records: ${record.metadata.lastModifiedTime} rpm")
-                }
-            } else {
-                Text(text = "No cycling cadence records available.")
-            }
+//            if (cyclingCadence.isNotEmpty()) {
+//                Text(
+//                    text = "Cycling Cadence Records:",
+//                    fontWeight = FontWeight.Bold,
+//                    fontSize = 18.sp
+//                )
+//                cyclingCadence.forEach { record ->
+//                    Text(text = "Cycling Cadence Records: ${record.metadata.lastModifiedTime} rpm")
+//                }
+//            } else {
+//                Text(text = "No cycling cadence records available.")
+//            }
 
         }
     }

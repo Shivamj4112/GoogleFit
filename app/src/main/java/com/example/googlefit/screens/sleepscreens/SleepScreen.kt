@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
@@ -66,6 +67,9 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
     val range by healthManager.range.observeAsState()
     val timeIntervals by healthManager.timeIntervals.observeAsState(emptyList())
 
+    var selectedRange by remember { mutableStateOf(range) }
+
+
     LaunchedEffect(Unit) {
         healthManager.fetchSleepData()
         Log.d("SleepScreen", "SleepScreen: sleepRecords.size: ${sleepRecords.size}")
@@ -89,10 +93,14 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 listOf("Week", "Month").forEach { range ->
-                    Button(onClick = {
-                        healthManager.setDateRange(range)
-                        healthManager.setRange(range)
-                    }) {
+                    Button(
+                        onClick = {
+                            selectedRange = range
+                            healthManager.setDateRange(range)
+                            healthManager.setRange(range)
+                        },
+                        enabled = selectedRange != range
+                    ) {
                         Text(text = range)
                     }
                 }
@@ -343,13 +351,16 @@ fun CustomSleepCalendar(
         (0 until 6).forEach { week ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 (1..7).forEach { day ->
-                    val date =
-                        firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
+
+                    val date = firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
+                    val alphaValue = if (date.isAfter(LocalDate.now())) 0.3f else 1f
+
                     if (date.month == currentMonth.month) {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .clickable { onDateClick(date) },
+                                .clickable { onDateClick(date) }
+                                .alpha(alphaValue),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(text = date.dayOfMonth.toString(), fontSize = 12.sp)

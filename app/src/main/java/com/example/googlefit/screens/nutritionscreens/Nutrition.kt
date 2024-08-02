@@ -1,7 +1,5 @@
 package com.example.googlefit.screens.nutritionscreens
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Surface
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -50,6 +50,8 @@ import androidx.navigation.NavHostController
 import com.example.googlefit.HealthManager
 import com.example.googlefit.R
 import com.example.googlefit.navigation.Route.NUTRITION_DETAILS_SCREEN
+import com.example.googlefit.utils.DateRange
+import com.example.googlefit.utils.TopBar
 import com.example.googlefit.utils.util.formateDate
 import com.example.googlefit.utils.util.getWeekday
 import ir.ehsannarmani.compose_charts.ColumnChart
@@ -57,6 +59,7 @@ import ir.ehsannarmani.compose_charts.models.BarProperties
 import ir.ehsannarmani.compose_charts.models.Bars
 import ir.kaaveh.sdpcompose.sdp
 import ir.kaaveh.sdpcompose.ssp
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -70,6 +73,9 @@ fun NutritionScreen(healthManager: HealthManager, navController: NavHostControll
     val range by healthManager.range.observeAsState()
     val timeIntervals by healthManager.timeIntervals.observeAsState(emptyList())
 
+    var showChart by remember { mutableStateOf(false) }
+    var isTransitioning by remember { mutableStateOf(false) }
+
     LaunchedEffect(range) {
         healthManager.fetchNutritionData()
     }
@@ -79,97 +85,86 @@ fun NutritionScreen(healthManager: HealthManager, navController: NavHostControll
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
+                .padding(horizontal = 10.sdp)
                 .verticalScroll(rememberScrollState())
         ) {
+            TopBar(navController = navController, title = "Nutrition")
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 22.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                listOf("Day", "Week", "Month").forEach { range ->
-                    Button(onClick = {
-                        healthManager.setDateRange(range)
-                        healthManager.setRange(range)
-                    }) {
-                        Text(text = range)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
+            DateRange(healthManager)
 
             NutritionDataContent(
                 range = range,
                 timeIntervals = timeIntervals,
                 nutritionRecords = nutritionRecords,
                 hydrationRecords = hydrationRecords,
+                showChart, isTransitioning,
+                onChartChange = {showChart = it },
+                onTransitionChange = { isTransitioning = it }
             )
 
-            Surface {
-                Column(modifier = Modifier.fillMaxSize()) {
+            if (showChart){
 
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .fillMaxWidth()
-                            .background(Color.Black, RoundedCornerShape(15.dp))
-                            .padding(horizontal = 20.dp, vertical = 10.dp)
-                    ) {
-                        if (nutritionRecords.isNotEmpty()) {
-                            Text(
-                                text = "Calories Consumed Records",
-                                color = Color.White,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(20.dp))
+                Surface {
+                    Column(modifier = Modifier.fillMaxSize().padding(bottom = 10.sdp)) {
 
-                            nutritionRecords.reversed().forEach { record ->
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .padding(top = 10.dp)
+                                .fillMaxWidth()
+                                .background(Color.Black, RoundedCornerShape(15.dp))
+                                .padding(horizontal = 20.dp, vertical = 10.dp)
+                        ) {
+                            if (nutritionRecords.isNotEmpty()) {
+                                Text(
+                                    text = "Calories Consumed Records",
+                                    color = Color.White,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(20.dp))
 
-                                Column(
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(Color.White, RoundedCornerShape(15.dp))
-                                        .padding(horizontal = 15.dp, vertical = 10.dp)
-                                        .clickable(
-                                            interactionSource = MutableInteractionSource(),
-                                            indication = null
-                                        ) {
-                                            navController.navigate("$NUTRITION_DETAILS_SCREEN/${record.endTime}")
-                                        }
-                                ) {
-                                    Text(
-                                        text = "${getWeekday(record.endTime.toString())}, ${
-                                            formateDate(
-                                                record.endTime.toString()
-                                            )
-                                        }",
-                                        fontSize = 14.sp
-                                    )
+                                nutritionRecords.reversed().forEach { record ->
 
-                                    Text(
-                                        text = "${record.energy?.inKilocalories?.toInt()} Cal",
-                                        color = Color.Black,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
+                                    Column(
+                                        verticalArrangement = Arrangement.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(Color.White, RoundedCornerShape(15.dp))
+                                            .padding(horizontal = 15.dp, vertical = 10.dp)
+                                            .clickable(
+                                                interactionSource = MutableInteractionSource(),
+                                                indication = null
+                                            ) {
+                                                navController.navigate("$NUTRITION_DETAILS_SCREEN/${record.endTime}")
+                                            }
+                                    ) {
+                                        Text(
+                                            text = "${getWeekday(record.endTime.toString())}, ${
+                                                formateDate(
+                                                    record.endTime.toString()
+                                                )
+                                            }",
+                                            fontSize = 14.sp
+                                        )
+
+                                        Text(
+                                            text = "${record.energy?.inKilocalories?.toInt()} Cal",
+                                            color = Color.Black,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(10.dp))
                                 }
-                                Spacer(modifier = Modifier.height(10.dp))
+                            } else {
+                                Text(
+                                    text = "No calories burned records available.",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                )
                             }
-                        } else {
-                            Text(
-                                text = "No calories burned records available.",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                            )
                         }
                     }
                 }
@@ -186,166 +181,197 @@ private fun NutritionDataContent(
     timeIntervals: List<Pair<Instant, Instant>>,
     nutritionRecords: List<NutritionRecord>,
     hydrationRecords: List<HydrationRecord>,
+    showChart : Boolean,
+    isTransitioning  :Boolean,
+    onChartChange: (Boolean) -> Unit,
+    onTransitionChange: (Boolean) -> Unit
 ) {
+    LaunchedEffect(range) {
+        if (!isTransitioning) {
+            onTransitionChange(true)
+            onChartChange(false)
+            delay(300)
+            when (range) {
+                "Day" -> {
+                    onChartChange(true)
+                }
+                "Week" -> {
+                    onChartChange(true)
+                }
+            }
+            onTransitionChange(false)
+        }
+    }
+
 
     var totalNutrition by remember { mutableIntStateOf(0) }
     var totalHydration by remember { mutableIntStateOf(0) }
     var showNutritionDialog by remember { mutableStateOf(false) }
 
-    when (range) {
+    if (isTransitioning) {
+        CircularProgressIndicator(
+            modifier = Modifier
+        )
+    }
+    else{
+        when (range) {
 
-        "Day" -> {
-            showNutritionDialog = false
-            val intervalLabels = listOf("4 - 8", "8 - 12", "12 - 16", "16 - 20", "20 - 24", "0 - 4")
-            val intervalData = timeIntervals.mapIndexed { index, interval ->
-                val totalNutrition =
-                    nutritionRecords.filter { it.endTime >= interval.first && it.endTime < interval.second }
-                        .sumOf { it.energy!!.inKilocalories }
-                val totalHydration =
-                    hydrationRecords.filter { it.endTime >= interval.first && it.endTime < interval.second }
-                        .sumOf { it.volume.inMilliliters }
+            "Day" -> {
+                showNutritionDialog = false
+                val intervalLabels = listOf("4 - 8", "8 - 12", "12 - 16", "16 - 20", "20 - 24", "0 - 4")
+                val intervalData = timeIntervals.mapIndexed { index, interval ->
+                    val totalNutrition =
+                        nutritionRecords.filter { it.endTime >= interval.first && it.endTime < interval.second }
+                            .sumOf { it.energy!!.inKilocalories }
+                    val totalHydration =
+                        hydrationRecords.filter { it.endTime >= interval.first && it.endTime < interval.second }
+                            .sumOf { it.volume.inMilliliters }
 
-                Bars(
-                    label = intervalLabels[index],
-                    values = listOf(
-                        Bars.Data(
-                            label = "Nutrition",
-                            value = totalNutrition,
-                            color = SolidColor(Color.Green),
-                            properties = BarProperties(
-                                thickness = 8.dp,
-                                spacing = 0.dp,
-                                cornerRadius = Bars.Data.Radius.Rectangle(
-                                    topRight = 2.dp,
-                                    topLeft = 2.dp
+                    Bars(
+                        label = intervalLabels[index],
+                        values = listOf(
+                            Bars.Data(
+                                label = "Nutrition",
+                                value = totalNutrition,
+                                color = SolidColor(Color.Green),
+                                properties = BarProperties(
+                                    thickness = 8.dp,
+                                    spacing = 0.dp,
+                                    cornerRadius = Bars.Data.Radius.Rectangle(
+                                        topRight = 2.dp,
+                                        topLeft = 2.dp
+                                    )
+                                )
+                            ),
+                            Bars.Data(
+                                label = "Hydration",
+                                value = totalHydration,
+                                color = SolidColor(Color.Red),
+                                properties = BarProperties(
+                                    thickness = 8.dp,
+                                    spacing = 0.dp,
+                                    cornerRadius = Bars.Data.Radius.Rectangle(
+                                        topRight = 2.dp,
+                                        topLeft = 2.dp
+                                    )
                                 )
                             )
-                        ),
-                        Bars.Data(
-                            label = "Hydration",
-                            value = totalHydration,
-                            color = SolidColor(Color.Red),
-                            properties = BarProperties(
-                                thickness = 8.dp,
-                                spacing = 0.dp,
-                                cornerRadius = Bars.Data.Radius.Rectangle(
-                                    topRight = 2.dp,
-                                    topLeft = 2.dp
-                                )
-                            )
+
                         )
-
                     )
-                )
-            }
-            ColumnChart(
-                modifier = Modifier
-                    .height(250.sdp)
-                    .padding(horizontal = 22.dp),
-                data = intervalData,
-                barProperties = BarProperties(
-                    cornerRadius = Bars.Data.Radius.Rectangle(
-                        topRight = 6.dp,
-                        topLeft = 6.dp
-                    ),
-                    spacing = 3.dp,
-                    thickness = 20.dp,
-                ),
-                animationSpec = tween(500)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+                }
 
-        }
-
-        "Week" -> {
-            showNutritionDialog = false
-
-            val nutritionGroupedData = nutritionRecords.groupBy {
-                OffsetDateTime.parse(it.endTime.toString())
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            }.mapValues { entry ->
-                entry.value.sumOf { it.energy!!.inKilocalories }
-            }
-
-            val hydrationGroupedData = hydrationRecords.groupBy {
-                OffsetDateTime.parse(it.endTime.toString())
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            }.mapValues { entry ->
-                entry.value.sumOf { it.volume.inMilliliters }
-            }
-
-            val today = LocalDate.now()
-            val past7Days = (6 downTo 0).map {
-                val date = today.minusDays(it.toLong())
-                date to date.format(DateTimeFormatter.ofPattern("dd\nMMM"))
-            }
-
-            val chartData = past7Days.map { (date, label) ->
-                val totalNutrition = nutritionGroupedData[date.toString()] ?: 0.0
-                val totalHydration = hydrationGroupedData[date.toString()] ?: 0.0
-
-                Bars(
-                    label = label,
-                    values = listOf(
-                        Bars.Data(
-                            label = "Nutrition",
-                            value = totalNutrition,
-                            color = SolidColor(Color.Green),
-                            properties = BarProperties(
-                                thickness = 8.dp,
-                                spacing = 0.dp,
-                                cornerRadius = Bars.Data.Radius.Rectangle(
-                                    topRight = 2.dp,
-                                    topLeft = 2.dp
-                                )
-                            )
+                if (showChart) {
+                    ColumnChart(
+                        modifier = Modifier
+                            .height(250.sdp),
+                        data = intervalData,
+                        barProperties = BarProperties(
+                            cornerRadius = Bars.Data.Radius.Rectangle(
+                                topRight = 6.dp,
+                                topLeft = 6.dp
+                            ),
+                            spacing = 3.dp,
+                            thickness = 20.dp,
                         ),
-                        Bars.Data(
-                            label = "Hydration",
-                            value = totalHydration,
-                            color = SolidColor(Color.Red),
-                            properties = BarProperties(
-                                thickness = 8.dp,
-                                spacing = 0.dp,
-                                cornerRadius = Bars.Data.Radius.Rectangle(
-                                    topRight = 2.dp,
-                                    topLeft = 2.dp
-                                )
-                            )
-                        )
-
+                        animationSpec = tween(500)
                     )
-                )
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+
             }
 
-            ColumnChart(
-                modifier = Modifier
-                    .height(250.sdp)
-                    .padding(horizontal = 20.dp),
-                data = chartData,
-                barProperties = BarProperties(
-                    cornerRadius = Bars.Data.Radius.Rectangle(
-                        topRight = 6.dp,
-                        topLeft = 6.dp
-                    ),
-                    spacing = 3.dp,
-                    thickness = 20.dp,
-                ),
-                animationSpec = tween(500)
-            )
+            "Week" -> {
+                showNutritionDialog = false
 
-            Spacer(modifier = Modifier.height(24.dp))
-        }
+                val nutritionGroupedData = nutritionRecords.groupBy {
+                    OffsetDateTime.parse(it.endTime.toString())
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                }.mapValues { entry ->
+                    entry.value.sumOf { it.energy!!.inKilocalories }
+                }
 
-        "Month" -> {
-            NutritionCalendar(
-                modifier = Modifier.padding(horizontal = 18.dp),
-                nutritionRecords = nutritionRecords,
-                hydrationRecords = hydrationRecords,
-            ) { nutrition, hydration ->
-                showNutritionDialog = true
-                totalNutrition = nutrition
-                totalHydration = hydration
+                val hydrationGroupedData = hydrationRecords.groupBy {
+                    OffsetDateTime.parse(it.endTime.toString())
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                }.mapValues { entry ->
+                    entry.value.sumOf { it.volume.inMilliliters }
+                }
+
+                val today = LocalDate.now()
+                val past7Days = (6 downTo 0).map {
+                    val date = today.minusDays(it.toLong())
+                    date to date.format(DateTimeFormatter.ofPattern(" dd\nMMM"))
+                }
+
+                val chartData = past7Days.map { (date, label) ->
+                    val totalNutrition = nutritionGroupedData[date.toString()] ?: 0.0
+                    val totalHydration = hydrationGroupedData[date.toString()] ?: 0.0
+
+                    Bars(
+                        label = label,
+                        values = listOf(
+                            Bars.Data(
+                                label = "Nutrition",
+                                value = totalNutrition,
+                                color = SolidColor(Color.Green),
+                                properties = BarProperties(
+                                    thickness = 8.dp,
+                                    spacing = 0.dp,
+                                    cornerRadius = Bars.Data.Radius.Rectangle(
+                                        topRight = 2.dp,
+                                        topLeft = 2.dp
+                                    )
+                                )
+                            ),
+                            Bars.Data(
+                                label = "Hydration",
+                                value = totalHydration,
+                                color = SolidColor(Color.Red),
+                                properties = BarProperties(
+                                    thickness = 8.dp,
+                                    spacing = 0.dp,
+                                    cornerRadius = Bars.Data.Radius.Rectangle(
+                                        topRight = 2.dp,
+                                        topLeft = 2.dp
+                                    )
+                                )
+                            )
+
+                        )
+                    )
+                }
+
+                if (showChart) {
+                    ColumnChart(
+                        modifier = Modifier
+                            .height(250.sdp),
+                        data = chartData,
+                        barProperties = BarProperties(
+                            cornerRadius = Bars.Data.Radius.Rectangle(
+                                topRight = 6.dp,
+                                topLeft = 6.dp
+                            ),
+                            spacing = 3.dp,
+                            thickness = 20.dp,
+                        ),
+                        animationSpec = tween(500)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            "Month" -> {
+                NutritionCalendar(
+                    modifier = Modifier,
+                    nutritionRecords = nutritionRecords,
+                    hydrationRecords = hydrationRecords,
+                ) { nutrition, hydration ->
+                    showNutritionDialog = true
+                    totalNutrition = nutrition
+                    totalHydration = hydration
+                }
             }
         }
     }
@@ -441,7 +467,7 @@ fun NutritionCalendar(
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(all = 8.dp),
+                .padding(top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -506,8 +532,11 @@ fun NutritionCalendar(
         (0 until 6).forEach { week ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 (1..7).forEach { day ->
+
                     val date =
                         firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
+                    val alphaValue = if (date.isAfter(LocalDate.now())) 0.3f else 1f
+
                     if (date.month == currentMonth.month) {
 
                         val totalNutrition = nutritionGroupedData[date.toString()] ?: 0.0
@@ -520,7 +549,8 @@ fun NutritionCalendar(
                                         totalNutrition.toInt(),
                                         totalHydration.toInt()
                                     )
-                                },
+                                }
+                                .alpha(alphaValue),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(text = date.dayOfMonth.toString(), fontSize = 12.sp)

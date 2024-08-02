@@ -75,8 +75,7 @@ fun VitalsDateRangeScreen(
                             if (formattedDate !in displayedDates) {
                                 displayedDates.add(formattedDate)
 
-                                val bpmValues =
-                                    heartRecords.flatMap { record -> record.samples.map { it.beatsPerMinute } }
+                                val bpmValues = heartRecords.flatMap { record -> record.samples.map { it.beatsPerMinute } }
                                 val minBpm = bpmValues.minOrNull() ?: 0
                                 val maxBpm = bpmValues.maxOrNull() ?: 0
 

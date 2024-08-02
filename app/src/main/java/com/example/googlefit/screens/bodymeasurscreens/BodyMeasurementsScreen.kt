@@ -1,4 +1,4 @@
-package com.example.googlefit.screens.vitalsscreens
+package com.example.googlefit.screens.bodymeasurscreens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,47 +28,55 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.googlefit.HealthManager
-import com.example.googlefit.data.VitalType.HEART_RATE
-import com.example.googlefit.data.VitalType.BLOOD_PRESSURE
-import com.example.googlefit.data.VitalType.RESPIRATORY_RATE
-import com.example.googlefit.data.VitalType.BODY_TEMPERATURE
-import com.example.googlefit.data.VitalType.OXYGEN_SATURATION
-import com.example.googlefit.navigation.Route.VITALS_RANGE_SCREEN
+import com.example.googlefit.data.BodyMeasurementType.BODY_FAT
+import com.example.googlefit.data.BodyMeasurementType.HEIGHT
+import com.example.googlefit.data.BodyMeasurementType.METABOLIC_RATE
+import com.example.googlefit.data.BodyMeasurementType.WEIGHT
+import com.example.googlefit.navigation.Route.BODY_MEASUREMENT_RANGE_SCREEN
 import com.example.googlefit.utils.TopBar
 import com.example.googlefit.utils.util.formatLastModifiedTime
 import com.example.googlefit.utils.util.formateDate
 import ir.kaaveh.sdpcompose.sdp
 import ir.kaaveh.sdpcompose.ssp
+import kotlinx.coroutines.delay
 
 @Composable
-fun VitalsScreen(healthManager: HealthManager, navController: NavHostController) {
+fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostController) {
 
-    val heartRecords by healthManager.heartRateRecords.observeAsState(emptyList())
-    val bloodPressureRecord by healthManager.bloodPressureRecords.observeAsState(emptyList())
-    val respiratoryRateRecord by healthManager.respiratoryRateRecords.observeAsState(emptyList())
-    val oxygenRecords by healthManager.oxygenSaturationRecords.observeAsState(emptyList())
-    val bodyTemperatureRecord by healthManager.bodyTemperatureRecords.observeAsState(emptyList())
-    val range by healthManager.range.observeAsState()
+    val weightRecords = healthManager.weightRecords.observeAsState(emptyList())
+    val heightRecords = healthManager.heightRecords.observeAsState(emptyList())
+    val bodyFatRecords = healthManager.bodyFatRecords.observeAsState(emptyList())
+    val metabolicRateRecords = healthManager.basalMetabolicRate.observeAsState(emptyList())
+    val dateRange by healthManager.dateRange.observeAsState()
 
-    LaunchedEffect(range) {
-        healthManager.fetchVitalsData()
+    LaunchedEffect(Unit) {
+        delay(50)
+        healthManager.setDateRange("Month")
+        healthManager.setRange("Month")
+    }
+
+    LaunchedEffect(dateRange) {
+        delay(50)
+        healthManager.fetchBodyMeasurementsData()
     }
 
     Surface {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 10.sdp)
-                .verticalScroll(rememberScrollState())
         ) {
 
-            TopBar(navController = navController, title = "Vitals")
+            TopBar(navController = navController, title = "Body Measurements")
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Heart Rate
-            Surface {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
@@ -79,75 +87,15 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/$HEART_RATE")
+                                if (weightRecords.value.isNotEmpty()) {
+                                    navController.navigate("$BODY_MEASUREMENT_RANGE_SCREEN/$WEIGHT")
+                                }
                             }
                     ) {
-                        if (heartRecords.isNotEmpty()) {
-                            val lastRecord = heartRecords.last().samples.last()
-
+                        if (weightRecords.value.isNotEmpty()) {
+                            val lastRecord = weightRecords.value.last()
                             Text(
-                                color = Color.White,
-                                text = "Heart Rate",
-                                fontSize = 12.ssp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                color = Color.White,
-                                text = "${formateDate(lastRecord.time.toString())} at ${
-                                    formatLastModifiedTime(
-                                        lastRecord.time.toString()
-                                    )
-                                }",
-                                fontSize = 8.ssp,
-                            )
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            Row {
-                                Text(
-                                    text = lastRecord.beatsPerMinute.toString(),
-                                    color = Color.White,
-                                    fontSize = 17.ssp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    modifier = Modifier.padding(top = 2.sdp),
-                                    text = "bpm",
-                                    color = Color.White,
-                                    fontSize = 8.ssp
-                                )
-                            }
-                        } else {
-                            Text(
-                                text = "No heart rate records available.",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Blood Pressure
-            Surface {
-                Column(modifier = Modifier.fillMaxSize()) {
-
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier
-                            .padding(top = 10.dp)
-                            .fillMaxWidth()
-                            .background(Color.Black, RoundedCornerShape(15.dp))
-                            .padding(horizontal = 12.sdp, vertical = 10.dp)
-                            .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/${BLOOD_PRESSURE}")
-                            }
-                    ) {
-                        if (bloodPressureRecord.isNotEmpty()) {
-                            val lastRecord = bloodPressureRecord.last()
-                            Text(
-                                text = "Blood Pressure Records",
+                                text = "Weight",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
@@ -166,7 +114,7 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
 
                             Row {
                                 Text(
-                                    text = "${lastRecord.systolic.inMillimetersOfMercury.toInt()}/${lastRecord.diastolic.inMillimetersOfMercury.toInt()}",
+                                    text = lastRecord.weight.inKilograms.toString(),
                                     color = Color.White,
                                     fontSize = 17.ssp,
                                     fontWeight = FontWeight.Bold
@@ -174,24 +122,22 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     modifier = Modifier.padding(top = 2.sdp),
-                                    text = "mmHg",
+                                    text = "kg",
                                     color = Color.White,
                                     fontSize = 8.ssp
                                 )
                             }
+
                         } else {
                             Text(
-                                text = "No blood pressure records available.",
+                                text = "No weight records available",
                                 color = Color.White,
                                 fontSize = 14.sp,
                             )
                         }
                     }
                 }
-            }
 
-            // Respiratory Rate
-            Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
@@ -202,13 +148,15 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/${RESPIRATORY_RATE}")
+                                if (heightRecords.value.isNotEmpty()) {
+                                    navController.navigate("$BODY_MEASUREMENT_RANGE_SCREEN/$HEIGHT")
+                                }
                             }
                     ) {
-                        if (respiratoryRateRecord.isNotEmpty()) {
-                            val lastRecord = respiratoryRateRecord.last()
+                        if (heightRecords.value.isNotEmpty()) {
+                            val lastRecord = heightRecords.value.last()
                             Text(
-                                text = "Respiratory Rate Records",
+                                text = "Height",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
@@ -227,15 +175,14 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
 
                             Row {
                                 Text(
-                                    text = lastRecord.rate.toInt().toString(),
+                                    text = "%.1f ".format(lastRecord.height.inFeet),
                                     color = Color.White,
                                     fontSize = 17.ssp,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     modifier = Modifier.padding(top = 2.sdp),
-                                    text = "rpm",
+                                    text = "ft",
                                     color = Color.White,
                                     fontSize = 8.ssp
                                 )
@@ -243,17 +190,14 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
 
                         } else {
                             Text(
-                                text = "No respiratory rate records available.",
+                                text = "No height records available",
                                 color = Color.White,
                                 fontSize = 14.sp,
                             )
                         }
                     }
                 }
-            }
 
-            // Body Temperature
-            Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
@@ -264,13 +208,15 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/${BODY_TEMPERATURE}")
+                                if (bodyFatRecords.value.isNotEmpty()) {
+                                    navController.navigate("$BODY_MEASUREMENT_RANGE_SCREEN/$BODY_FAT")
+                                }
                             }
                     ) {
-                        if (bodyTemperatureRecord.isNotEmpty()) {
-                            val lastRecord = bodyTemperatureRecord.last()
+                        if (bodyFatRecords.value.isNotEmpty()) {
+                            val lastRecord = bodyFatRecords.value.last()
                             Text(
-                                text = "Body Temperature Records",
+                                text = "Body fat",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
@@ -289,15 +235,14 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
 
                             Row {
                                 Text(
-                                    text = lastRecord.temperature.inFahrenheit.toInt().toString(),
+                                    text = "%.1f ".format(lastRecord.percentage.value),
                                     color = Color.White,
                                     fontSize = 17.ssp,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     modifier = Modifier.padding(top = 2.sdp),
-                                    text = "°F",
+                                    text = "%",
                                     color = Color.White,
                                     fontSize = 8.ssp
                                 )
@@ -305,17 +250,14 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
 
                         } else {
                             Text(
-                                text = "No body temperature records available.",
+                                text = "No body fat records available",
                                 color = Color.White,
                                 fontSize = 14.sp,
                             )
                         }
                     }
                 }
-            }
 
-            // Oxygen Saturation
-            Surface {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
@@ -326,13 +268,15 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/${OXYGEN_SATURATION}")
+                                if (bodyFatRecords.value.isNotEmpty()) {
+                                    navController.navigate("$BODY_MEASUREMENT_RANGE_SCREEN/$METABOLIC_RATE")
+                                }
                             }
                     ) {
-                        if (oxygenRecords.isNotEmpty()) {
-                            val lastRecord = oxygenRecords.last()
+                        if (metabolicRateRecords.value.isNotEmpty()) {
+                            val lastRecord = metabolicRateRecords.value.last()
                             Text(
-                                text = "Oxygen Records",
+                                text = "Metabolic Rate",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
@@ -349,24 +293,61 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
 
                             Spacer(modifier = Modifier.height(20.dp))
 
-                            Text(
-                                text = "${lastRecord.percentage.value.toInt()}%",
-                                color = Color.White,
-                                fontSize = 17.ssp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row {
+                                Text(
+                                    text = "${lastRecord.basalMetabolicRate.inKilocaloriesPerDay.toInt()} ",
+                                    color = Color.White,
+                                    fontSize = 17.ssp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    modifier = Modifier.padding(top = 2.sdp),
+                                    text = "Cal",
+                                    color = Color.White,
+                                    fontSize = 8.ssp
+                                )
+                            }
 
                         } else {
                             Text(
-                                text = "No oxygen records available.",
+                                text = "No body fat records available",
                                 color = Color.White,
                                 fontSize = 14.sp,
                             )
                         }
                     }
                 }
+
+
             }
         }
     }
 }
 
+@Composable
+fun ContentCard(title: String, message: String) {
+
+    Surface {
+        Column(modifier = Modifier.fillMaxSize()) {
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .padding(10.dp)
+                    .fillMaxWidth()
+                    .background(Color.Black, RoundedCornerShape(15.dp))
+                    .padding(horizontal = 40.dp, vertical = 20.dp)
+            ) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(text = message, color = Color.White, fontSize = 18.sp)
+            }
+        }
+    }
+}
