@@ -28,11 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.googlefit.HealthManager
-import com.example.googlefit.data.VitalType.HEART_RATE
 import com.example.googlefit.data.VitalType.BLOOD_PRESSURE
-import com.example.googlefit.data.VitalType.RESPIRATORY_RATE
 import com.example.googlefit.data.VitalType.BODY_TEMPERATURE
+import com.example.googlefit.data.VitalType.HEART_RATE
 import com.example.googlefit.data.VitalType.OXYGEN_SATURATION
+import com.example.googlefit.data.VitalType.RESPIRATORY_RATE
 import com.example.googlefit.navigation.Route.VITALS_RANGE_SCREEN
 import com.example.googlefit.utils.TopBar
 import com.example.googlefit.utils.util.formatLastModifiedTime
@@ -79,7 +79,9 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/$HEART_RATE")
+                                if (heartRecords.isNotEmpty()) {
+                                    navController.navigate("$VITALS_RANGE_SCREEN/$HEART_RATE")
+                                }
                             }
                     ) {
                         if (heartRecords.isNotEmpty()) {
@@ -141,7 +143,9 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/${BLOOD_PRESSURE}")
+                                if (bloodPressureRecord.isNotEmpty()) {
+                                    navController.navigate("$VITALS_RANGE_SCREEN/${BLOOD_PRESSURE}")
+                                }
                             }
                     ) {
                         if (bloodPressureRecord.isNotEmpty()) {
@@ -202,7 +206,9 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/${RESPIRATORY_RATE}")
+                                if (respiratoryRateRecord.isNotEmpty()) {
+                                    navController.navigate("$VITALS_RANGE_SCREEN/${RESPIRATORY_RATE}")
+                                }
                             }
                     ) {
                         if (respiratoryRateRecord.isNotEmpty()) {
@@ -264,7 +270,9 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/${BODY_TEMPERATURE}")
+                                if (bodyTemperatureRecord.isNotEmpty()) {
+                                    navController.navigate("$VITALS_RANGE_SCREEN/${BODY_TEMPERATURE}")
+                                }
                             }
                     ) {
                         if (bodyTemperatureRecord.isNotEmpty()) {
@@ -326,7 +334,9 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                navController.navigate("$VITALS_RANGE_SCREEN/${OXYGEN_SATURATION}")
+                                if (oxygenRecords.isNotEmpty()) {
+                                    navController.navigate("$VITALS_RANGE_SCREEN/${OXYGEN_SATURATION}")
+                                }
                             }
                     ) {
                         if (oxygenRecords.isNotEmpty()) {

@@ -3,6 +3,7 @@ package com.example.googlefit.screens.sleepscreens
 import android.util.Log
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Surface
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,8 +47,8 @@ import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.navigation.NavHostController
 import com.example.googlefit.HealthManager
 import com.example.googlefit.R
-import com.example.googlefit.navigation.Route.NUTRITION_DETAILS_SCREEN
 import com.example.googlefit.navigation.Route.SLEEP_DETAILS_SCREEN
+import com.example.googlefit.utils.TopBar
 import com.example.googlefit.utils.util.formatDuration
 import com.example.googlefit.utils.util.formateDate
 import com.example.googlefit.utils.util.getWeekday
@@ -54,6 +56,7 @@ import com.example.googlefit.utils.util.timeDiffInSeconds
 import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.models.BarProperties
 import ir.ehsannarmani.compose_charts.models.Bars
+import ir.kaaveh.sdpcompose.sdp
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -80,16 +83,14 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 10.sdp)
         ) {
-            Text(text = "Sleep", fontWeight = FontWeight.Bold, fontSize = 24.sp)
-
-            Spacer(modifier = Modifier.height(24.dp))
+            TopBar(navController, "Sleep")
+            Spacer(modifier = Modifier.height(14.dp))
 
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 22.dp),
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 listOf("Week", "Month").forEach { range ->
@@ -99,13 +100,22 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
                             healthManager.setDateRange(range)
                             healthManager.setRange(range)
                         },
-                        enabled = selectedRange != range
+                        enabled = selectedRange != range,
+                        colors = ButtonDefaults.buttonColors(
+                            disabledContentColor = Color.White,
+                            disabledContainerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = Color.LightGray.copy(alpha = 0.3f),
+                            contentColor = Color.Black
+
+                        )
                     ) {
                         Text(text = range)
                     }
                 }
             }
+
             Spacer(modifier = Modifier.height(24.dp))
+
 
             SleepDataContent(
                 range = range,
@@ -113,17 +123,16 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
                 sleepRecords = sleepRecords
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-
             Surface {
-                Column(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())) {
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier
-                            .padding(10.dp)
+                            .padding(top = 10.dp)
                             .fillMaxWidth()
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 20.dp, vertical = 10.dp)
@@ -151,7 +160,8 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
                                         .fillMaxWidth()
                                         .background(Color.White, RoundedCornerShape(15.dp))
                                         .padding(horizontal = 15.dp, vertical = 10.dp)
-                                        .align(Alignment.Start)  .clickable(
+                                        .align(Alignment.Start)
+                                        .clickable(
                                             interactionSource = MutableInteractionSource(),
                                             indication = null
                                         ) {
@@ -160,7 +170,11 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
 
                                 ) {
                                     Text(
-                                        text = "${getWeekday(record.endTime.toString())}, ${formateDate(record.endTime.toString())}",
+                                        text = "${getWeekday(record.endTime.toString())}, ${
+                                            formateDate(
+                                                record.endTime.toString()
+                                            )
+                                        }",
                                         fontSize = 14.sp
                                     )
                                     Text(
@@ -182,6 +196,7 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
                     }
                 }
             }
+
 
         }
     }
@@ -239,8 +254,8 @@ private fun SleepDataContent(
 
             ColumnChart(
                 modifier = Modifier
-                    .height(250.dp)
-                    .padding(horizontal = 20.dp),
+                    .height(250.sdp)
+                    .padding(horizontal = 10.dp),
                 data = chartData,
                 barProperties = BarProperties(
                     cornerRadius = Bars.Data.Radius.Rectangle(
@@ -260,7 +275,7 @@ private fun SleepDataContent(
 
         "Month" -> {
             CustomSleepCalendar(
-                modifier = Modifier.padding(horizontal = 18.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
                 sleepRecords = sleepRecords
             ) {}
         }
@@ -277,7 +292,7 @@ fun CustomSleepCalendar(
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
 
     val groupedData = sleepRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
         entry.value.sumOf { timeDiffInSeconds(it.startTime.toString(), it.endTime.toString()) }
@@ -352,28 +367,26 @@ fun CustomSleepCalendar(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 (1..7).forEach { day ->
 
-                    val date = firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
+                    val date =
+                        firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
                     val alphaValue = if (date.isAfter(LocalDate.now())) 0.3f else 1f
+                    val isFutureDate = date.isAfter(LocalDate.now())
 
                     if (date.month == currentMonth.month) {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .clickable { onDateClick(date) }
                                 .alpha(alphaValue),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(text = date.dayOfMonth.toString(), fontSize = 12.sp)
                             val totalSleep = groupedData[date.toString()]?.toDouble() ?: 0.0
                             if (totalSleep > 0.0) {
-                                Text(
-                                    text = formatDuration(totalSleep.toInt()),
-                                    modifier = Modifier
-                                        .padding(top = 22.dp)
-                                        .align(Alignment.BottomCenter),
-                                    fontSize = 8.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Canvas(modifier = Modifier
+                                    .size(5.sdp)
+                                    .align(Alignment.BottomCenter), onDraw = {
+                                    drawCircle(color = Color.Green)
+                                })
                             }
                         }
                     } else {

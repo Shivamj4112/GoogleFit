@@ -56,7 +56,8 @@ fun BodyMeasurementDetailsScreen(
                 .padding(horizontal = 10.sdp),
         ) {
 
-            TopBar(navController, "Vitals")
+            val formattedBodyMeasurements = measurement.replace("_", " ").lowercase().replaceFirstChar { it.uppercaseChar() }
+            TopBar(navController, formattedBodyMeasurements)
 
             Column(
                 modifier = Modifier
@@ -95,9 +96,9 @@ fun BodyMeasurementDetailsScreen(
 
                                 Row {
                                     val weightText = if (minWeight == maxWeight) {
-                                        "$minWeight kg"
+                                        "$minWeight "
                                     } else {
-                                        "$minWeight - $maxWeight kg"
+                                        "$minWeight - $maxWeight "
                                     }
                                     Text(
                                         text = weightText,

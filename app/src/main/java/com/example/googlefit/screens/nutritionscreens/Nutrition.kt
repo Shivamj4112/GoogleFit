@@ -1,6 +1,7 @@
 package com.example.googlefit.screens.nutritionscreens
 
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -105,7 +106,9 @@ fun NutritionScreen(healthManager: HealthManager, navController: NavHostControll
             if (showChart){
 
                 Surface {
-                    Column(modifier = Modifier.fillMaxSize().padding(bottom = 10.sdp)) {
+                    Column(modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 10.sdp)) {
 
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -443,14 +446,14 @@ fun NutritionCalendar(
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
 
     val nutritionGroupedData = nutritionRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
         entry.value.sumOf { it.energy!!.inKilocalories }
     }
 
     val hydrationGroupedData = hydrationRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
         entry.value.sumOf { it.volume.inMilliliters }
@@ -533,9 +536,9 @@ fun NutritionCalendar(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 (1..7).forEach { day ->
 
-                    val date =
-                        firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
+                    val date = firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
                     val alphaValue = if (date.isAfter(LocalDate.now())) 0.3f else 1f
+                    val isFutureDate = date.isAfter(LocalDate.now())
 
                     if (date.month == currentMonth.month) {
 
@@ -544,25 +547,28 @@ fun NutritionCalendar(
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .clickable {
-                                    onDateClick(
-                                        totalNutrition.toInt(),
-                                        totalHydration.toInt()
-                                    )
+                                .let {
+                                    if (!isFutureDate){
+                                        it.clickable {
+                                            onDateClick(
+                                                totalNutrition.toInt(),
+                                                totalHydration.toInt()
+                                            )
+                                        }
+                                    }
+                                    else{
+                                        it
+                                    }
                                 }
+
                                 .alpha(alphaValue),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(text = date.dayOfMonth.toString(), fontSize = 12.sp)
-                            if (totalNutrition > 0.0) {
-                                Text(
-                                    text = "${totalNutrition.toInt()} Cal",
-                                    modifier = Modifier
-                                        .padding(top = 22.dp)
-                                        .align(Alignment.BottomCenter),
-                                    fontSize = 8.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                            if (totalNutrition > 0.0 || totalHydration > 0.0) {
+                                Canvas(modifier = Modifier.size(5.sdp).align(Alignment.BottomCenter), onDraw = {
+                                    drawCircle(color = Color.Green)
+                                })
                             }
                         }
                     } else {

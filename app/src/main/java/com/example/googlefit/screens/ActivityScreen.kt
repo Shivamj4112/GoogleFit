@@ -3,6 +3,7 @@ package com.example.googlefit.screens
 import android.util.Log
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -90,6 +91,8 @@ fun ActivityScreen(healthManager: HealthManager, navController: NavHostControlle
                 .verticalScroll(rememberScrollState())
         ) {
             TopBar(navController = navController, title = "Activity")
+
+
             
             DateRange(healthManager)
 
@@ -491,7 +494,7 @@ private fun ActivityContent(
 
             "Month" -> {
                 CustomCalendar(
-                    modifier = Modifier.padding(horizontal = 18.dp),
+                    modifier = Modifier,
                     stepsRecords = stepsRecords,
                     caloriesRecords = caloriesRecords,
                     distanceRecords = distanceRecords,
@@ -592,41 +595,40 @@ fun CustomCalendar(
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
 
     val stepsGroupedData = stepsRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
         entry.value.sumOf { it.count }
     }
 
     val caloriesGroupedData = caloriesRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
         entry.value.sumOf { it.energy.inKilocalories }
     }
 
     val distanceGroupedData = distanceRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
         entry.value.sumOf { it.distance.inKilometers }
     }
     val cyclingGroupedData = cyclingRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
         entry.value.sumOf { it.samples.first().revolutionsPerMinute }
     }
 
     val speedGroupedData = speedRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
         entry.value.sumOf { it.samples.first().speed.inKilometersPerHour }
     }
 
-    val totalStepsForMonth =
-        stepsGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
+    val totalStepsForMonth = stepsGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
 
     val totalCaloriesForMonth =
         caloriesGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
@@ -717,42 +719,43 @@ fun CustomCalendar(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 (1..7).forEach { day ->
 
-                    val date =
-                        firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
+                    val date = firstDayOfMonth.plusDays((week * 7 + day - firstDayOfMonth.dayOfWeek.value).toLong())
                     val totalSteps = stepsGroupedData[date.toString()]?.toDouble() ?: 0.0
                     val totalCalories = caloriesGroupedData[date.toString()] ?: 0.0
                     val totalDistance = distanceGroupedData[date.toString()] ?: 0.0
                     val totalCycling = cyclingGroupedData[date.toString()] ?: 0.0
                     val totalSpeed = speedGroupedData[date.toString()] ?: 0.0
 
+                    val isFutureDate = date.isAfter(LocalDate.now())
                     val alphaValue = if (date.isAfter(LocalDate.now())) 0.3f else 1f
 
                     if (date.month == currentMonth.month) {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .clickable {
-                                    onDateClick(
-                                        totalSteps,
-                                        totalCalories,
-                                        totalDistance,
-                                        totalCycling,
-                                        totalSpeed
-                                    )
+                                .let {
+                                    if (!isFutureDate) {
+                                        it.clickable {
+                                            onDateClick(
+                                                totalSteps,
+                                                totalCalories,
+                                                totalDistance,
+                                                totalCycling,
+                                                totalSpeed
+                                            )
+                                        }
+                                    } else {
+                                        it
+                                    }
                                 }
                                 .alpha(alphaValue),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(text = date.dayOfMonth.toString(), fontSize = 12.sp)
-                            if (totalSteps > 0.0 && totalCalories > 0.0) {
-                                Text(
-                                    text = totalSteps.toInt().toString(),
-                                    modifier = Modifier
-                                        .padding(top = 22.dp)
-                                        .align(Alignment.BottomCenter),
-                                    fontSize = 8.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                            if (totalSteps > 0.0 || totalCalories > 0.0 || totalSpeed > 0.0 || totalDistance > 0.0) {
+                                Canvas(modifier = Modifier.size(5.sdp).align(Alignment.BottomCenter), onDraw = {
+                                    drawCircle(color = Color.Green)
+                                })
                             }
                         }
                     } else {

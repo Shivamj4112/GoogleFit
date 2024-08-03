@@ -77,6 +77,7 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
+
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Column(
@@ -268,7 +269,7 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
                             .background(Color.Black, RoundedCornerShape(15.dp))
                             .padding(horizontal = 12.sdp, vertical = 10.dp)
                             .clickable {
-                                if (bodyFatRecords.value.isNotEmpty()) {
+                                if (metabolicRateRecords.value.isNotEmpty()) {
                                     navController.navigate("$BODY_MEASUREMENT_RANGE_SCREEN/$METABOLIC_RATE")
                                 }
                             }
