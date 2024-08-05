@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Surface
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -57,7 +58,7 @@ import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.models.BarProperties
 import ir.ehsannarmani.compose_charts.models.Bars
 import ir.kaaveh.sdpcompose.sdp
-import java.time.Instant
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -71,6 +72,8 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
     val timeIntervals by healthManager.timeIntervals.observeAsState(emptyList())
 
     var selectedRange by remember { mutableStateOf(range) }
+    var showChart by remember { mutableStateOf(false) }
+    var isTransitioning by remember { mutableStateOf(false) }
 
 
     LaunchedEffect(Unit) {
@@ -119,165 +122,199 @@ fun SleepScreen(healthManager: HealthManager, navController: NavHostController) 
 
             SleepDataContent(
                 range = range,
-                timeIntervals = timeIntervals,
-                sleepRecords = sleepRecords
+                sleepRecords = sleepRecords,
+                isTransitioning,
+                showChart,
+                onTransitionChanged = { isTransitioning = it },
+                onChartChanged = { showChart = it }
             )
 
-            Surface {
-                Column(modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())) {
-
+            if (showChart) {
+                Surface {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
                         modifier = Modifier
-                            .padding(top = 10.dp)
-                            .fillMaxWidth()
-                            .background(Color.Black, RoundedCornerShape(15.dp))
-                            .padding(horizontal = 20.dp, vertical = 10.dp)
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
                     ) {
-                        if (sleepRecords.isNotEmpty()) {
-                            Text(
-                                text = "Sleep Records",
-                                color = Color.White,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(20.dp))
 
-                            sleepRecords.reversed().forEach { record ->
-                                val formattedDuration = formatDuration(
-                                    timeDiffInSeconds(
-                                        record.startTime.toString(),
-                                        record.endTime.toString()
-                                    )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .padding(top = 10.dp)
+                                .fillMaxWidth()
+                                .background(Color.Black, RoundedCornerShape(15.dp))
+                                .padding(horizontal = 20.dp, vertical = 10.dp)
+                        ) {
+                            if (sleepRecords.isNotEmpty()) {
+                                Text(
+                                    text = "Sleep Records",
+                                    color = Color.White,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
+                                Spacer(modifier = Modifier.height(20.dp))
 
-                                Column(
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(Color.White, RoundedCornerShape(15.dp))
-                                        .padding(horizontal = 15.dp, vertical = 10.dp)
-                                        .align(Alignment.Start)
-                                        .clickable(
-                                            interactionSource = MutableInteractionSource(),
-                                            indication = null
-                                        ) {
-                                            navController.navigate("$SLEEP_DETAILS_SCREEN/${record.startTime}/${record.endTime}")
-                                        }
+                                sleepRecords.reversed().forEach { record ->
+                                    val formattedDuration = formatDuration(
+                                        timeDiffInSeconds(
+                                            record.startTime.toString(),
+                                            record.endTime.toString()
+                                        )
+                                    )
 
-                                ) {
-                                    Text(
-                                        text = "${getWeekday(record.endTime.toString())}, ${
-                                            formateDate(
-                                                record.endTime.toString()
-                                            )
-                                        }",
-                                        fontSize = 14.sp
-                                    )
-                                    Text(
-                                        text = formattedDuration,
-                                        color = Color.Black,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
+                                    Column(
+                                        verticalArrangement = Arrangement.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(Color.White, RoundedCornerShape(15.dp))
+                                            .padding(horizontal = 15.dp, vertical = 10.dp)
+                                            .align(Alignment.Start)
+                                            .clickable(
+                                                interactionSource = MutableInteractionSource(),
+                                                indication = null
+                                            ) {
+                                                navController.navigate("$SLEEP_DETAILS_SCREEN/${record.startTime}/${record.endTime}")
+                                            }
+
+                                    ) {
+                                        Text(
+                                            text = "${getWeekday(record.endTime.toString())}, ${
+                                                formateDate(
+                                                    record.endTime.toString()
+                                                )
+                                            }",
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = formattedDuration,
+                                            color = Color.Black,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(10.dp))
                                 }
-                                Spacer(modifier = Modifier.height(10.dp))
+                            } else {
+                                Text(
+                                    text = "No sleep records available.",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                )
                             }
-                        } else {
-                            Text(
-                                text = "No sleep records available.",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                            )
                         }
                     }
                 }
             }
 
-
         }
     }
 }
 
-
 @Composable
 private fun SleepDataContent(
     range: String?,
-    timeIntervals: List<Pair<Instant, Instant>>,
-    sleepRecords: List<SleepSessionRecord>
+    sleepRecords: List<SleepSessionRecord>,
+    isTransitioning: Boolean,
+    showChart: Boolean,
+    onTransitionChanged: (Boolean) -> Unit,
+    onChartChanged: (Boolean) -> Unit
 ) {
-    when (range) {
 
-        "Week" -> {
-            val groupedData = sleepRecords.groupBy {
-                OffsetDateTime.parse(it.endTime.toString())
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            }.mapValues { entry ->
-                entry.value.sumOf {
-                    timeDiffInSeconds(
-                        it.startTime.toString(),
-                        it.endTime.toString()
-                    )
+    LaunchedEffect(range) {
+        if (!isTransitioning) {
+            onTransitionChanged(true)
+            onChartChanged(false)
+
+            delay(300)
+
+            when (range) {
+                "Week" -> {
+                    onChartChanged(true)
                 }
             }
+            onTransitionChanged(false)
+        }
+    }
 
-            val today = LocalDate.now()
-            val past7Days = (6 downTo 0).map {
-                val date = today.minusDays(it.toLong())
-                date to date.format(DateTimeFormatter.ofPattern(" dd\nMMM"))
-            }
+    if (isTransitioning) {
+        CircularProgressIndicator(
+            modifier = Modifier
+        )
+    } else {
+        when (range) {
 
-            val chartData = past7Days.map { (date, label) ->
-                val totalSleep = groupedData[date.toString()]?.toDouble() ?: 0.0
-                Bars(
-                    label = label,
-                    values = listOf(
-                        Bars.Data(
-                            label = "Sleep",
-                            value = "%.5f ".format(totalSleep / 3600).toDouble(),
-                            color = SolidColor(Color.Green),
-                            properties = BarProperties(
-                                thickness = 20.dp,
-                                spacing = 0.dp,
-                                cornerRadius = Bars.Data.Radius.Rectangle(
-                                    topRight = 4.dp,
-                                    topLeft = 3.dp
+            "Week" -> {
+                if (showChart) {
+                    val groupedData = sleepRecords.groupBy {
+                        OffsetDateTime.parse(it.endTime.toString())
+                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                    }.mapValues { entry ->
+                        entry.value.sumOf {
+                            timeDiffInSeconds(
+                                it.startTime.toString(),
+                                it.endTime.toString()
+                            )
+                        }
+                    }
+
+                    val today = LocalDate.now()
+                    val past7Days = (6 downTo 0).map {
+                        val date = today.minusDays(it.toLong())
+                        date to date.format(DateTimeFormatter.ofPattern(" dd\nMMM"))
+                    }
+
+                    val chartData = past7Days.map { (date, label) ->
+                        val totalSleep = groupedData[date.toString()]?.toDouble() ?: 0.0
+                        Bars(
+                            label = label,
+                            values = listOf(
+                                Bars.Data(
+                                    label = "Sleep",
+                                    value = "%.5f ".format(totalSleep / 3600).toDouble(),
+                                    color = SolidColor(Color.Green),
+                                    properties = BarProperties(
+                                        thickness = 20.dp,
+                                        spacing = 0.dp,
+                                        cornerRadius = Bars.Data.Radius.Rectangle(
+                                            topRight = 4.dp,
+                                            topLeft = 3.dp
+                                        )
+                                    )
                                 )
                             )
                         )
+                    }
+
+                    ColumnChart(
+                        modifier = Modifier
+                            .height(250.sdp)
+                            .padding(horizontal = 10.dp),
+                        data = chartData,
+                        barProperties = BarProperties(
+                            cornerRadius = Bars.Data.Radius.Rectangle(
+                                topRight = 6.dp,
+                                topLeft = 6.dp
+                            ),
+                            spacing = 3.dp,
+                            thickness = 20.dp,
+                        ),
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessLow
+                        )
                     )
-                )
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                }
             }
 
-            ColumnChart(
-                modifier = Modifier
-                    .height(250.sdp)
-                    .padding(horizontal = 10.dp),
-                data = chartData,
-                barProperties = BarProperties(
-                    cornerRadius = Bars.Data.Radius.Rectangle(
-                        topRight = 6.dp,
-                        topLeft = 6.dp
-                    ),
-                    spacing = 3.dp,
-                    thickness = 20.dp,
-                ),
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessLow
+            "Month" -> {
+                CustomSleepCalendar(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    sleepRecords = sleepRecords
                 )
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        "Month" -> {
-            CustomSleepCalendar(
-                modifier = Modifier.padding(horizontal = 8.dp),
-                sleepRecords = sleepRecords
-            ) {}
+            }
         }
     }
 }
@@ -287,7 +324,6 @@ private fun SleepDataContent(
 fun CustomSleepCalendar(
     modifier: Modifier = Modifier,
     sleepRecords: List<SleepSessionRecord>,
-    onDateClick: (LocalDate) -> Unit
 ) {
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
 
@@ -350,7 +386,7 @@ fun CustomSleepCalendar(
             listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { dayName ->
                 Box(
                     modifier = Modifier
-                        .size(50.dp)
+                        .size(40.dp)
                         .padding(top = 20.dp),
                     contentAlignment = Alignment.Center
                 ) {

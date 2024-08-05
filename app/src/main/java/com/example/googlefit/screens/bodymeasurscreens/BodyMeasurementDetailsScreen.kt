@@ -96,9 +96,9 @@ fun BodyMeasurementDetailsScreen(
 
                                 Row {
                                     val weightText = if (minWeight == maxWeight) {
-                                        "$minWeight "
+                                        "%.1f kg".format(minWeight)
                                     } else {
-                                        "$minWeight - $maxWeight "
+                                        "%.1f - %.1f kg".format(minWeight,maxWeight)
                                     }
                                     Text(
                                         text = weightText,

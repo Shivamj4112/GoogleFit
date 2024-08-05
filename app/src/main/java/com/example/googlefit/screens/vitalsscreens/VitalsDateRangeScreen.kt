@@ -1,6 +1,5 @@
 package com.example.googlefit.screens.vitalsscreens
 
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,7 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.health.connect.client.records.BloodGlucoseRecord
 import androidx.health.connect.client.records.BloodPressureRecord
 import androidx.health.connect.client.records.BodyTemperatureRecord
 import androidx.health.connect.client.records.HeartRateRecord
@@ -48,13 +47,10 @@ import androidx.health.connect.client.records.RespiratoryRateRecord
 import androidx.navigation.NavHostController
 import com.example.googlefit.HealthManager
 import com.example.googlefit.R
-import com.example.googlefit.data.BodyMeasurementType.BODY_FAT
-import com.example.googlefit.data.BodyMeasurementType.HEIGHT
-import com.example.googlefit.data.BodyMeasurementType.METABOLIC_RATE
-import com.example.googlefit.data.BodyMeasurementType.WEIGHT
-import com.example.googlefit.data.MeasurementItem
+import com.example.googlefit.data.VitalType
 import com.example.googlefit.data.VitalType.BLOOD_PRESSURE
 import com.example.googlefit.data.VitalType.BODY_TEMPERATURE
+import com.example.googlefit.data.VitalType.BLOOD_GLUCOSE
 import com.example.googlefit.data.VitalType.HEART_RATE
 import com.example.googlefit.data.VitalType.OXYGEN_SATURATION
 import com.example.googlefit.data.VitalType.RESPIRATORY_RATE
@@ -77,17 +73,19 @@ fun VitalsDateRangeScreen(
 ) {
     val heartRecords by healthManager.heartRateRecords.observeAsState(emptyList())
     val bloodPressureRecord by healthManager.bloodPressureRecords.observeAsState(emptyList())
+    val bloodGlucoseRecord by healthManager.bloodGlucoseRecords.observeAsState(emptyList())
     val respiratoryRateRecord by healthManager.respiratoryRateRecords.observeAsState(emptyList())
     val oxygenRecords by healthManager.oxygenSaturationRecords.observeAsState(emptyList())
     val bodyTemperatureRecord by healthManager.bodyTemperatureRecords.observeAsState(emptyList())
     val dateRange by healthManager.dateRange.observeAsState()
 
-    var totalHeartRate by remember { mutableStateOf(0) }
-    var totalSystolic by remember { mutableStateOf(0) }
-    var totalDiastolic by remember { mutableStateOf(0) }
-    var totalRespiratory by remember { mutableStateOf(0) }
-    var totalOxygen by remember { mutableStateOf(0) }
-    var totalTemp by remember { mutableStateOf(0) }
+    var selectedHeartRateRecords by remember { mutableStateOf(listOf<HeartRateRecord>()) }
+    var selectedBloodPressureRecords by remember { mutableStateOf(listOf<BloodPressureRecord>()) }
+    var selectedBloodGlucoseRecords by remember { mutableStateOf(listOf<BloodGlucoseRecord>()) }
+    var selectedRespiratoryRateRecords by remember { mutableStateOf(listOf<RespiratoryRateRecord>()) }
+    var selectedBodyTemperatureRecords by remember { mutableStateOf(listOf<BodyTemperatureRecord>()) }
+    var selectedOxygenSaturationRecords by remember { mutableStateOf(listOf<OxygenSaturationRecord>()) }
+
     var showDataDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(dateRange) {
@@ -106,7 +104,6 @@ fun VitalsDateRangeScreen(
 
             Spacer(modifier = Modifier.height(10.sdp))
             DateRange(healthManager)
-            Spacer(modifier = Modifier.height(10.sdp))
 
             if (healthManager.range.value != "Month") {
                 when (vitals) {
@@ -115,7 +112,7 @@ fun VitalsDateRangeScreen(
                             val displayedDates = mutableSetOf<String>()
 
                             heartRecords.reversed().forEach { record ->
-                                val data = record.samples.first()
+                                val data = record.samples.last()
                                 val formattedDate = formateDate(data.time.toString())
 
 
@@ -132,10 +129,6 @@ fun VitalsDateRangeScreen(
                                             .fillMaxWidth()
                                             .clickable {
                                                 navController.navigate("$VITALS_DETAILS_SCREEN/$HEART_RATE/$formattedDate")
-                                                Log.d(
-                                                    "VitalsDateRangeScreen",
-                                                    "VitalsDateRangeScreen: $formattedDate"
-                                                )
                                             }
                                             .padding(horizontal = 10.sdp, vertical = 10.sdp)
                                     ) {
@@ -147,7 +140,7 @@ fun VitalsDateRangeScreen(
                                             Text(text = formattedDate, fontSize = 10.ssp)
                                         }
                                         Text(
-                                            text = "$minBpm-$maxBpm bpm",
+                                            text = "${record.samples.first().beatsPerMinute} bpm",
                                             fontSize = 12.ssp,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -191,10 +184,7 @@ fun VitalsDateRangeScreen(
                                             .fillMaxWidth()
                                             .clickable {
                                                 navController.navigate("$VITALS_DETAILS_SCREEN/$BLOOD_PRESSURE/$formattedDate")
-                                                Log.d(
-                                                    "VitalsDateRangeScreen",
-                                                    "VitalsDateRangeScreen: $formattedDate"
-                                                )
+
                                             }
                                             .padding(horizontal = 10.sdp, vertical = 10.sdp)
                                     ) {
@@ -217,6 +207,63 @@ fun VitalsDateRangeScreen(
                                         }
                                         Text(
                                             text = "$systolicText mmHg / $diastolicText mmHg",
+                                            fontSize = 12.ssp,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                    }
+
+                                }
+                            }
+                        } else {
+                            Text(text = "No data found", color = Color.Gray)
+                        }
+                    }
+
+                    "$BLOOD_GLUCOSE" -> {
+                        if (bloodGlucoseRecord.isNotEmpty()) {
+                            val displayedDates = mutableSetOf<String>()
+
+                            bloodGlucoseRecord.reversed().forEach { record ->
+                                val formattedDate = formateDate(record.time.toString())
+
+                                if (formattedDate !in displayedDates) {
+                                    displayedDates.add(formattedDate)
+
+                                    val dateWiseBloodGlucoseRecords =
+                                        bloodGlucoseRecord.groupBy { record ->
+                                            formateDate(record.time.toString())
+                                        }
+                                    val targetDateRecords =
+                                        dateWiseBloodGlucoseRecords[formattedDate] ?: emptyList()
+
+                                    val minLevel =
+                                        targetDateRecords.minOf { it.level.inMillimolesPerLiter }
+                                    val maxLevel =
+                                        targetDateRecords.maxOf { it.level.inMillimolesPerLiter }
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                navController.navigate("$VITALS_DETAILS_SCREEN/$BLOOD_GLUCOSE/$formattedDate")
+
+                                            }
+                                            .padding(horizontal = 10.sdp, vertical = 10.sdp)
+                                    ) {
+                                        Row {
+                                            Text(
+                                                text = "${getWeekday(record.time.toString())},",
+                                                fontSize = 10.ssp
+                                            )
+                                            Text(text = formattedDate, fontSize = 10.ssp)
+                                        }
+                                        val glucoseText = if (minLevel == maxLevel) {
+                                            "$minLevel"
+                                        } else {
+                                            "$minLevel-$maxLevel"
+                                        }
+                                        Text(
+                                            text = "$glucoseText mmol/L",
                                             fontSize = 12.ssp,
                                             fontWeight = FontWeight.ExtraBold
                                         )
@@ -254,10 +301,7 @@ fun VitalsDateRangeScreen(
                                             .fillMaxWidth()
                                             .clickable {
                                                 navController.navigate("$VITALS_DETAILS_SCREEN/${RESPIRATORY_RATE}/$formattedDate")
-                                                Log.d(
-                                                    "VitalsDateRangeScreen",
-                                                    "VitalsDateRangeScreen: $formattedDate"
-                                                )
+
                                             }
                                             .padding(horizontal = 10.sdp, vertical = 10.sdp)
                                     ) {
@@ -315,10 +359,7 @@ fun VitalsDateRangeScreen(
                                             .fillMaxWidth()
                                             .clickable {
                                                 navController.navigate("$VITALS_DETAILS_SCREEN/${BODY_TEMPERATURE}/$formattedDate")
-                                                Log.d(
-                                                    "VitalsDateRangeScreen",
-                                                    "VitalsDateRangeScreen: $formattedDate"
-                                                )
+
                                             }
                                             .padding(horizontal = 10.sdp, vertical = 10.sdp)
                                     ) {
@@ -376,10 +417,7 @@ fun VitalsDateRangeScreen(
                                             .fillMaxWidth()
                                             .clickable {
                                                 navController.navigate("$VITALS_DETAILS_SCREEN/${OXYGEN_SATURATION}/$formattedDate")
-                                                Log.d(
-                                                    "VitalsDateRangeScreen",
-                                                    "VitalsDateRangeScreen: $formattedDate"
-                                                )
+
                                             }
                                             .padding(horizontal = 10.sdp, vertical = 10.sdp)
                                     ) {
@@ -410,26 +448,23 @@ fun VitalsDateRangeScreen(
                         }
                     }
                 }
-            }
-            else{
+            } else {
                 VitalsCalendar(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 5.sdp, vertical = 10.sdp),
+                        .padding(horizontal = 5.sdp),
                     heartRateRecords = heartRecords,
                     bloodPressureRecords = bloodPressureRecord,
                     respiratoryRecords = respiratoryRateRecord,
                     oxygenSaturationRecords = oxygenRecords,
                     bodyTemperatureRecords = bodyTemperatureRecord,
                     type = vitals,
-                    onDateClick = { heartRate,systolic,diastolic,respiratory, oxygen, temp ->
-
-                        totalHeartRate = heartRate
-                        totalSystolic = systolic
-                        totalDiastolic = diastolic
-                        totalRespiratory = respiratory
-                        totalOxygen = oxygen
-                        totalTemp = temp
+                    onDateClick = { heartRate, bloodPressure, respiratory, bodyTemperature, oxygenSaturation ->
+                        selectedHeartRateRecords = heartRate
+                        selectedBloodPressureRecords = bloodPressure
+                        selectedRespiratoryRateRecords = respiratory
+                        selectedBodyTemperatureRecords = bodyTemperature
+                        selectedOxygenSaturationRecords = oxygenSaturation
                         showDataDialog = true
                     }
 
@@ -437,65 +472,140 @@ fun VitalsDateRangeScreen(
             }
 
             if (showDataDialog) {
-
-                Dialog(
-                    properties = DialogProperties(),
-                    onDismissRequest = { showDataDialog = false },
-                ) {
+                Dialog(onDismissRequest = { showDataDialog = false }) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(15.sdp))
                             .background(Color.White)
+                            .padding(14.sdp)
                     ) {
                         Text(
-                            text = "Body Measurement Records",
+                            text = "$formattedVitals Records",
                             fontSize = 18.ssp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                             modifier = Modifier
-                                .padding(top = 15.sdp)
                                 .padding(horizontal = 15.sdp)
+                                .align(Alignment.CenterHorizontally)
                         )
-
-                        val list = when (vitals) {
-                            "$HEART_RATE" -> MeasurementItem("Heart Rate ", totalHeartRate.toString())
-                            "$BLOOD_PRESSURE" -> {
-                                MeasurementItem("Systolic ", totalSystolic.toString())
-                                MeasurementItem("Diastolic ", totalDiastolic.toString())
-                            }
-                            "$RESPIRATORY_RATE" -> MeasurementItem("Respiratory Rate ", totalRespiratory.toString())
-                            "$BODY_TEMPERATURE" -> MeasurementItem("Body Temperature ", totalTemp.toString())
-                            "$OXYGEN_SATURATION" -> MeasurementItem("Oxygen", totalOxygen.toString())
-                            else -> null
-                        }
 
                         Spacer(modifier = Modifier.height(10.sdp))
 
-                        list?.let { item ->
-                            Spacer(modifier = Modifier.height(10.sdp))
+                        when (vitals) {
+                            "$HEART_RATE" -> {
+                                if (selectedHeartRateRecords.isNotEmpty()) {
 
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp)
-                            ) {
-                                Text(text = item.label)
-                                Text(text = item.value)
+                                    selectedHeartRateRecords.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Heart Rate")
+                                            Text(
+                                                text = "${record.samples.first().beatsPerMinute} bpm",
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+
+                                        }
+
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray)
+                                }
+                            }
+
+                            "$BLOOD_PRESSURE" -> {
+                                if (selectedBloodPressureRecords.isNotEmpty()) {
+                                    selectedBloodPressureRecords.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Blood Pressure")
+                                            Text(
+                                                text = "${record.systolic.inMillimetersOfMercury} / ${record.diastolic.inMillimetersOfMercury} mmHg",
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray)
+                                }
+                            }
+
+                            "$RESPIRATORY_RATE" -> {
+                                if (respiratoryRateRecord.isNotEmpty()) {
+                                    selectedRespiratoryRateRecords.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Respiratory Rate")
+                                            Text(
+                                                text = "${record.rate} rpm",
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray)
+                                }
+                            }
+
+                            "$BODY_TEMPERATURE" -> {
+                                if (selectedBodyTemperatureRecords.isNotEmpty()) {
+                                    selectedBodyTemperatureRecords.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Body Temperature")
+                                            Text(
+                                                text = "${record.temperature.inFahrenheit.toInt()} °F",
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray)
+                                }
+                            }
+
+                            "$OXYGEN_SATURATION" -> {
+                                if (selectedOxygenSaturationRecords.isNotEmpty()) {
+                                    selectedOxygenSaturationRecords.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Oxygen Saturation")
+                                            Text(
+                                                text = "${record.percentage.value} %",
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray)
+                                }
                             }
                         }
 
 
-
                         Button(
-                            modifier = Modifier.padding(vertical = 8.sdp),
-                            onClick = {
-                                showDataDialog = false
-                            }
+                            modifier = Modifier
+                                .padding(top = 8.dp)
+                                .align(Alignment.CenterHorizontally),
+                            onClick = { showDataDialog = false }
                         ) {
-                            Text("Cancel")
+                            Text("Close")
                         }
                     }
                 }
@@ -515,7 +625,14 @@ fun VitalsCalendar(
     oxygenSaturationRecords: List<OxygenSaturationRecord>,
     bodyTemperatureRecords: List<BodyTemperatureRecord>,
     type: String,
-    onDateClick: (Int, Int, Int, Int , Int , Int) -> Unit,
+    onDateClick: (
+        List<HeartRateRecord>,
+        List<BloodPressureRecord>,
+        List<RespiratoryRateRecord>,
+        List<BodyTemperatureRecord>,
+        List<OxygenSaturationRecord>
+    ) -> Unit
+
 ) {
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
 
@@ -523,50 +640,48 @@ fun VitalsCalendar(
         OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.samples.first().beatsPerMinute }
+        entry.value.first().samples.first().beatsPerMinute
     }
 
     val bloodPressureSystolicGroupedData = bloodPressureRecords.groupBy {
         OffsetDateTime.parse(it.time.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.systolic.inMillimetersOfMercury }
+        entry.value.first().systolic.inMillimetersOfMercury
     }
 
     val bloodPressureDiastolicGroupedData = bloodPressureRecords.groupBy {
         OffsetDateTime.parse(it.time.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.diastolic.inMillimetersOfMercury }
+        entry.value.first().diastolic.inMillimetersOfMercury
     }
 
     val respiratoryGroupedData = respiratoryRecords.groupBy {
         OffsetDateTime.parse(it.time.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.rate }
+        entry.value.first().rate
     }
 
     val oxygenSaturationGroupedData = oxygenSaturationRecords.groupBy {
         OffsetDateTime.parse(it.time.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.percentage.value.toInt() }
+        entry.value.first().percentage.value.toInt()
     }
 
     val bodyTemperatureGroupedData = bodyTemperatureRecords.groupBy {
         OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.temperature.inFahrenheit }
+        entry.value.first().temperature.inFahrenheit
     }
-
 
     Column(modifier = modifier) {
         Row(
             Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -606,7 +721,7 @@ fun VitalsCalendar(
             listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { dayName ->
                 Box(
                     modifier = Modifier
-                        .size(50.dp)
+                        .size(40.dp)
                         .padding(top = 10.sdp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -630,10 +745,13 @@ fun VitalsCalendar(
                     if (date.month == currentMonth.month) {
 
                         val totalHeartRate = heartRateGroupedData[date.toString()] ?: 0.0
-                        val totalSystolic = bloodPressureSystolicGroupedData[date.toString()] ?: 0.0
-                        val totalDiastolic = bloodPressureDiastolicGroupedData[date.toString()] ?: 0.0
+                        val totalSystolic =
+                            bloodPressureSystolicGroupedData[date.toString()] ?: 0.0
+                        val totalDiastolic =
+                            bloodPressureDiastolicGroupedData[date.toString()] ?: 0.0
                         val totalRespiratory = respiratoryGroupedData[date.toString()] ?: 0.0
-                        val totalBodyTemperature = bodyTemperatureGroupedData[date.toString()] ?: 0.0
+                        val totalBodyTemperature =
+                            bodyTemperatureGroupedData[date.toString()] ?: 0.0
                         val totalOxygen = oxygenSaturationGroupedData[date.toString()] ?: 0.0
 
                         Box(
@@ -641,13 +759,33 @@ fun VitalsCalendar(
                                 .size(40.dp)
                                 .clickable {
                                     onDateClick(
-                                        totalHeartRate.toInt(),
-                                        totalSystolic.toInt(),
-                                        totalDiastolic.toInt(),
-                                        totalRespiratory.toInt(),
-                                        totalBodyTemperature.toInt(),
-                                        totalOxygen.toInt()
+                                        heartRateRecords.filter { record ->
+                                            OffsetDateTime
+                                                .parse(record.endTime.toString())
+                                                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                        },
+                                        bloodPressureRecords.filter { record ->
+                                            OffsetDateTime
+                                                .parse(record.time.toString())
+                                                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                        },
+                                        respiratoryRecords.filter { record ->
+                                            OffsetDateTime
+                                                .parse(record.time.toString())
+                                                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                        },
+                                        bodyTemperatureRecords.filter { record ->
+                                            OffsetDateTime
+                                                .parse(record.time.toString())
+                                                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                        },
+                                        oxygenSaturationRecords.filter { record ->
+                                            OffsetDateTime
+                                                .parse(record.time.toString())
+                                                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                        }
                                     )
+
                                 }
                                 .alpha(alphaValue),
                             contentAlignment = Alignment.Center
@@ -668,7 +806,7 @@ fun VitalsCalendar(
                                 }
 
                                 "$BLOOD_PRESSURE" -> {
-                                    if (totalSystolic > 0.0) {
+                                    if (totalSystolic > 0.0 || totalDiastolic > 0.0) {
                                         Canvas(
                                             modifier = Modifier
                                                 .size(5.sdp)
@@ -699,6 +837,7 @@ fun VitalsCalendar(
                                             })
                                     }
                                 }
+
                                 "$OXYGEN_SATURATION" -> {
                                     if (totalOxygen.toDouble() > 0.0) {
                                         Canvas(

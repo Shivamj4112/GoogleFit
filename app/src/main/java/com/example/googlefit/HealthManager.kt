@@ -23,6 +23,7 @@ import androidx.health.connect.client.records.HydrationRecord
 import androidx.health.connect.client.records.MenstruationPeriodRecord
 import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.OxygenSaturationRecord
+import androidx.health.connect.client.records.PowerRecord
 import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.records.RespiratoryRateRecord
 import androidx.health.connect.client.records.RestingHeartRateRecord
@@ -56,11 +57,14 @@ class HealthManager(context: Context) : ViewModel() {
     private val _distanceRecords = MutableLiveData<List<DistanceRecord>>()
     val distanceRecords: LiveData<List<DistanceRecord>> get() = _distanceRecords
 
+    private val _powerRecord = MutableLiveData<List<PowerRecord>>()
+    val powerRecord: LiveData<List<PowerRecord>> get() = _powerRecord
+
     private val _cyclingRecords = MutableLiveData<List<CyclingPedalingCadenceRecord>>()
     val cyclingRecords: LiveData<List<CyclingPedalingCadenceRecord>> get() = _cyclingRecords
 
-    private val _wheelSpeedRecords = MutableLiveData<List<WheelchairPushesRecord>>()
-    val wheelSpeedRecords: LiveData<List<WheelchairPushesRecord>> get() = _wheelSpeedRecords
+    private val _exerciseSessionRecords = MutableLiveData<List<ExerciseSessionRecord>>()
+    val exerciseSessionRecords: LiveData<List<ExerciseSessionRecord>> get() = _exerciseSessionRecords
 
     private val _speedRecords = MutableLiveData<List<SpeedRecord>>()
     val speedRecords: LiveData<List<SpeedRecord>> get() = _speedRecords
@@ -87,6 +91,9 @@ class HealthManager(context: Context) : ViewModel() {
 
     private val _bloodPressureRecords = MutableLiveData<List<BloodPressureRecord>>()
     val bloodPressureRecords: LiveData<List<BloodPressureRecord>> get() = _bloodPressureRecords
+
+    private val _bloodGlucoseRecords = MutableLiveData<List<BloodGlucoseRecord>>()
+    val bloodGlucoseRecords: LiveData<List<BloodGlucoseRecord>> get() = _bloodGlucoseRecords
 
     private val _respiratoryRateRecords = MutableLiveData<List<RespiratoryRateRecord>>()
     val respiratoryRateRecords: LiveData<List<RespiratoryRateRecord>> get() = _respiratoryRateRecords
@@ -133,6 +140,7 @@ class HealthManager(context: Context) : ViewModel() {
         HealthPermission.getReadPermission(BloodGlucoseRecord::class),
         HealthPermission.getReadPermission(OxygenSaturationRecord::class),
         HealthPermission.getReadPermission(BodyTemperatureRecord::class),
+        HealthPermission.getReadPermission(PowerRecord::class),
         HealthPermission.getReadPermission(ExerciseSessionRecord::class),
         HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
         HealthPermission.getReadPermission(DistanceRecord::class),
@@ -208,6 +216,34 @@ class HealthManager(context: Context) : ViewModel() {
         }
 
     }
+    private fun fetchExerciseData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(ExerciseSessionRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(ExerciseSessionRecord::class, startInterval, endInterval)
+                }
+            }
+            _exerciseSessionRecords.value = data
+        }
+
+    }
+    private fun fetchPowerData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(PowerRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(PowerRecord::class, startInterval, endInterval)
+                }
+            }
+            _powerRecord.value = data
+        }
+
+    }
     private fun fetchDistanceData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
@@ -234,19 +270,7 @@ class HealthManager(context: Context) : ViewModel() {
             _cyclingRecords.value = data
         }
     }
-    private fun fetchWheelChairData() {
-        viewModelScope.launch {
-            val (start, end) = dateRange.value ?: return@launch
-            val data = if (_timeIntervals.value.isNullOrEmpty()) {
-                readRecords(WheelchairPushesRecord::class, start, end)
-            } else {
-                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
-                    readRecords(WheelchairPushesRecord::class, startInterval, endInterval)
-                }
-            }
-            _wheelSpeedRecords.value = data
-        }
-    }
+
     private fun fetchSpeedData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
@@ -277,8 +301,9 @@ class HealthManager(context: Context) : ViewModel() {
         fetchStepsData()
         fetchDistanceData()
         fetchCyclingData()
-        fetchWheelChairData()
+        fetchExerciseData()
         fetchSpeedData()
+        fetchPowerData()
         fetchCaloriesData()
     }
 
@@ -352,6 +377,7 @@ class HealthManager(context: Context) : ViewModel() {
     fun fetchVitalsData() {
         fetchHeartRateData()
         fetchBloodPressureData()
+        fetchBloodGlucoseData()
         fetchRespiratoryRateData()
         fetchOxygenSaturationData()
         fetchBodyTemperatureData()
@@ -393,6 +419,19 @@ class HealthManager(context: Context) : ViewModel() {
                 }
             }
             _bloodPressureRecords.value = data
+        }
+    }
+    private fun fetchBloodGlucoseData() {
+        viewModelScope.launch {
+            val (start, end) = dateRange.value ?: return@launch
+            val data = if (_timeIntervals.value.isNullOrEmpty()) {
+                readRecords(BloodGlucoseRecord::class, start, end)
+            } else {
+                _timeIntervals.value!!.flatMap { (startInterval, endInterval) ->
+                    readRecords(BloodGlucoseRecord::class, startInterval, endInterval)
+                }
+            }
+            _bloodGlucoseRecords.value = data
         }
     }
     private fun fetchOxygenSaturationData() {

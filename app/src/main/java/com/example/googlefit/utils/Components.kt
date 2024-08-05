@@ -37,6 +37,27 @@ import ir.kaaveh.sdpcompose.ssp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+val activitiesType = listOf(
+    "Aerobics", "Australian football", "Backcountry skiing", "Badminton", "Baseball", "Basketball",
+    "Beach volleyball", "Biathlon", "Biking", "Boxing", "Calisthenics", "Circuit training",
+    "Cricket", "Cross skating", "Cross-country skiing", "Cross fit", "Curling", "Dancing",
+    "Diving", "Downhill skiing", "Elliptical", "Ergometer", "Fencing", "Fitness walking",
+    "Flossing", "Football", "Frisbee", "Gardening", "Golf", "Gymnastics", "Handball",
+    "Handcycling", "High intensity interval training", "Hiking", "Hockey", "Horseback riding",
+    "Ice skating","Indoor skating", "Indoor volleyball", "Inline skating", "Interval training", "Jogging",
+    "Jumping rope", "Kayaking", "Kettlebell", "Kick scooter", "Kickboxing", "Kite skiing",
+    "Kitesurfing", "Martial arts", "Meditating", "Mixed martial arts", "Mountain biking",
+    "Nordic walking", "Open water swimming", "Other", "P90x", "Paced walking", "Paragliding",
+    "Pilates", "Polo", "Pool swimming", "Racquetball", "Road biking", "Rock climbing",
+    "Roller skiing", "Rowing", "Rowing machine", "Rugby", "Running", "Sailing", "Sand running",
+    "Scuba diving", "Skateboarding", "Skating", "Skiing", "Sledding","Snowboarding", "Snowshoeing", "Soccer",
+    "Softball", "Spinning", "Squash", "Stair climbing", "Stair climbing machine",
+    "Stand-up paddle boarding", "Stationary biking", "Strength training", "Stroller walking",
+    "Surfing", "Swimming", "Table tennis", "Tennis", "Treadmill running", "Treadmill walking",
+    "Utility biking", "Volleyball", "Wakeboarding", "Walking", "Water polo", "Weightlifting",
+    "Wheelchair", "Windsurfing", "Yoga", "Zumba"
+)
+
 @SuppressLint("UnrememberedMutableInteractionSource")
 @Composable
 fun DebounceClick(

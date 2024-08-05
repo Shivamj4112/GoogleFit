@@ -103,11 +103,7 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
                             )
                             Text(
                                 color = Color.White,
-                                text = "${formateDate(lastRecord.time.toString())} at ${
-                                    formatLastModifiedTime(
-                                        lastRecord.time.toString()
-                                    )
-                                }",
+                                text = "${formateDate(lastRecord.time.toString())} at ${formatLastModifiedTime(lastRecord.time.toString())}",
                                 fontSize = 8.ssp,
                             )
 
@@ -115,7 +111,7 @@ fun BodyMeasurementsScreen(healthManager: HealthManager, navController: NavHostC
 
                             Row {
                                 Text(
-                                    text = lastRecord.weight.inKilograms.toString(),
+                                    text = lastRecord.weight.inKilograms.toInt().toString(),
                                     color = Color.White,
                                     fontSize = 17.ssp,
                                     fontWeight = FontWeight.Bold

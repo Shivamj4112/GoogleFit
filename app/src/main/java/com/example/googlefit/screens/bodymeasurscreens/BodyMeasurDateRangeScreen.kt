@@ -50,7 +50,6 @@ import com.example.googlefit.data.BodyMeasurementType.BODY_FAT
 import com.example.googlefit.data.BodyMeasurementType.HEIGHT
 import com.example.googlefit.data.BodyMeasurementType.METABOLIC_RATE
 import com.example.googlefit.data.BodyMeasurementType.WEIGHT
-import com.example.googlefit.data.MeasurementItem
 import com.example.googlefit.navigation.Route.BODY_MEASUREMENT_DETAILS_SCREEN
 import com.example.googlefit.utils.DateRange
 import com.example.googlefit.utils.TopBar
@@ -58,7 +57,6 @@ import com.example.googlefit.utils.util.formateDate
 import com.example.googlefit.utils.util.getWeekday
 import ir.kaaveh.sdpcompose.sdp
 import ir.kaaveh.sdpcompose.ssp
-import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -75,10 +73,10 @@ fun BodyMeasurDateRangeScreen(
     val metabolicRateRecords = healthManager.basalMetabolicRate.observeAsState(emptyList())
     val dateRange by healthManager.dateRange.observeAsState()
 
-    var totalWeight by remember { mutableStateOf(0.0) }
-    var totalHeight by remember { mutableStateOf(0.0) }
-    var totalBodyFat by remember { mutableStateOf(0.0) }
-    var totalMetabolic by remember { mutableStateOf(0) }
+    var totalWeight by remember { mutableStateOf(listOf<WeightRecord>()) }
+    var totalHeight by remember { mutableStateOf(listOf<HeightRecord>()) }
+    var totalBodyFat by remember { mutableStateOf(listOf<BodyFatRecord>()) }
+    var totalMetabolic by remember { mutableStateOf(listOf<BasalMetabolicRateRecord>()) }
 
     var showDataDialog by remember { mutableStateOf(false) }
     var dialogReady by remember { mutableStateOf(false) }
@@ -151,9 +149,9 @@ fun BodyMeasurDateRangeScreen(
                                             Text(text = formattedDate, fontSize = 10.ssp)
                                         }
                                         val weightText = if (minWeight == maxWeight) {
-                                            "$minWeight kg"
+                                            "%.1f kg".format(minWeight)
                                         } else {
-                                            "$minWeight - $maxWeight kg"
+                                            "%.1f - %.1f kg".format(minWeight,maxWeight)
                                         }
                                         Text(
                                             text = weightText,
@@ -386,45 +384,111 @@ fun BodyMeasurDateRangeScreen(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(15.sdp))
                             .background(Color.White)
+                            .padding(16.sdp)
                     ) {
                         Text(
-                            text = "Body Measurement Records",
+                            text = "$formattedBodyMeasurements Records",
                             fontSize = 18.ssp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                             modifier = Modifier
-                                .padding(top = 15.sdp)
                                 .padding(horizontal = 15.sdp)
                         )
 
-                        val list = when (bodyMeasurments) {
-                            "$WEIGHT" -> MeasurementItem("Weight", "%.1f kg".format(totalWeight))
-                            "$HEIGHT" -> MeasurementItem("Height", "%.1f ft".format(totalHeight))
-                            "$BODY_FAT" -> MeasurementItem("Body Fat", "%.1f %%".format(totalBodyFat))
-                            "$METABOLIC_RATE" -> MeasurementItem("Metabolic Rate", "$totalMetabolic Cal")
-                            else -> null
-                        }
-
                         Spacer(modifier = Modifier.height(10.sdp))
 
-                        list?.let { item ->
-                            Spacer(modifier = Modifier.height(10.sdp))
+                        when (bodyMeasurments) {
 
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp)
-                            ) {
-                                Text(text = item.label)
-                                Text(text = item.value)
+                            "$WEIGHT" -> {
+                                if (totalWeight.isNotEmpty()) {
+
+                                    totalWeight.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Weight")
+                                            Text(
+                                                text = "%.1f kg".format(record.weight.inKilograms),
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray)
+                                }
+                            }
+
+                            "$HEIGHT" -> {
+                                if (totalHeight.isNotEmpty()) {
+                                    totalHeight.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Height")
+                                            Text(
+                                                text = "%.1f ft".format(record.height.inFeet),
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+
+                                        }
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray)
+                                }
+                            }
+
+                            "$BODY_FAT" -> {
+                                if (totalBodyFat.isNotEmpty()) {
+                                    totalBodyFat.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Body Fat")
+                                            Text(
+                                                text = "%.1f %%".format(record.percentage.value),
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+
+                                        }
+
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray)
+                                }
+                            }
+
+                            "$METABOLIC_RATE" -> {
+                                if (totalMetabolic.isNotEmpty()) {
+                                    totalMetabolic.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Metabolic Rate")
+                                            Text(
+                                                text = "%.1f Cal".format(record.basalMetabolicRate.inKilocaloriesPerDay),
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+
+                                        }
+
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray)
+                                }
                             }
                         }
 
-
-
                         Button(
-                            modifier = Modifier.padding(vertical = 8.sdp),
+                            modifier = Modifier.padding(top = 8.sdp),
                             onClick = {
                                 showDataDialog = false
                             }
@@ -446,47 +510,47 @@ fun BodyMeasurementCalendar(
     heightRecords: List<HeightRecord>,
     bodyFatRecords: List<BodyFatRecord>,
     metabolicRateRecords: List<BasalMetabolicRateRecord>,
-    type : String,
-    onDateClick: (Double, Double, Double, Int) -> Unit,
+    type: String,
+    onDateClick: (List<WeightRecord>, List<HeightRecord>, List<BodyFatRecord>, List<BasalMetabolicRateRecord>) -> Unit,
 ) {
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
 
     val weightGroupedData = weightRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.time.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.weight.inKilograms }
+        entry.value.first().weight.inKilograms
     }
 
     val heightGroupedData = heightRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.time.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.height.inKilometers }
+        entry.value.first().height.inFeet
     }
 
     val bodyFatGroupedData = bodyFatRecords.groupBy {
-        OffsetDateTime.parse(it.metadata.lastModifiedTime.toString())
+        OffsetDateTime.parse(it.time.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.percentage.value }
+        entry.value.first().percentage.value
     }
 
     val metabolicRateGroupedData = metabolicRateRecords.groupBy {
         OffsetDateTime.parse(it.time.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
-        entry.value.sumOf { it.basalMetabolicRate.inKilocaloriesPerDay }
+        entry.value.first().basalMetabolicRate.inKilocaloriesPerDay
     }
 
-    val totalWeightForMonth =
-        weightGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
-    val totalHeightForMonth =
-        heightGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
-    val totalBodyFatForMonth =
-        bodyFatGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
-    val totalMetabolicRateForMonth =
-        metabolicRateGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
+//    val totalWeightForMonth =
+//        weightGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
+//    val totalHeightForMonth =
+//        heightGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
+//    val totalBodyFatForMonth =
+//        bodyFatGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
+//    val totalMetabolicRateForMonth =
+//        metabolicRateGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
 
     Column(modifier = modifier) {
         Row(
@@ -504,43 +568,10 @@ fun BodyMeasurementCalendar(
                 )
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
                 Text(
                     text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
                     style = MaterialTheme.typography.headlineSmall
                 )
-                when(type){
-                    "$WEIGHT" -> {
-                        Text(
-                            text = "Total Weight: %.1f kg".format(totalWeightForMonth),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    "$HEIGHT" -> {
-                        Text(
-                            text = "Total Height: %.1f ft".format(totalHeightForMonth),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    "$BODY_FAT" -> {
-                        Text(
-                            text = "Total Body Fat: %.1f ".format(totalBodyFatForMonth),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    "$METABOLIC_RATE" -> {
-                        Text(
-                            text = "Total Metabolic Rate: ${totalMetabolicRateForMonth.toInt()} Cal",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-
             }
 
             var isCurrentMonth = currentMonth.isBefore(LocalDate.now().withDayOfMonth(1))
@@ -564,7 +595,7 @@ fun BodyMeasurementCalendar(
             listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { dayName ->
                 Box(
                     modifier = Modifier
-                        .size(50.dp)
+                        .size(40.dp)
                         .padding(top = 10.sdp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -600,14 +631,29 @@ fun BodyMeasurementCalendar(
                                     if (!isFutureDate) {
                                         it.clickable {
                                             onDateClick(
-                                                totalWeight,
-                                                totalHeight,
-                                                totalBodyFat,
-                                                totalMetabolicRate.toInt()
+                                                weightRecords.filter { record ->
+                                                    OffsetDateTime
+                                                        .parse(record.time.toString())
+                                                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                                },
+                                                heightRecords.filter { record ->
+                                                    OffsetDateTime
+                                                        .parse(record.time.toString())
+                                                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                                },
+                                                bodyFatRecords.filter { record ->
+                                                    OffsetDateTime
+                                                        .parse(record.time.toString())
+                                                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                                },
+                                                metabolicRateRecords.filter { record ->
+                                                    OffsetDateTime
+                                                        .parse(record.time.toString())
+                                                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                                },
                                             )
                                         }
-                                    }
-                                    else {
+                                    } else {
                                         it
                                     }
                                 }
@@ -616,32 +662,43 @@ fun BodyMeasurementCalendar(
                         ) {
                             Text(text = date.dayOfMonth.toString(), fontSize = 12.sp)
 
-                            when (type){
+                            when (type) {
 
                                 "$WEIGHT" -> {
                                     if (totalWeight > 0.0) {
-                                        Canvas(modifier = Modifier.size(5.sdp).align(Alignment.BottomCenter), onDraw = {
+                                        Canvas(modifier = Modifier
+                                            .size(5.sdp)
+                                            .align(Alignment.BottomCenter), onDraw = {
                                             drawCircle(color = Color.Green)
                                         })
                                     }
                                 }
+
                                 "$HEIGHT" -> {
                                     if (totalHeight > 0.0) {
-                                        Canvas(modifier = Modifier.size(5.sdp).align(Alignment.BottomCenter), onDraw = {
+                                        Canvas(modifier = Modifier
+                                            .size(5.sdp)
+                                            .align(Alignment.BottomCenter), onDraw = {
                                             drawCircle(color = Color.Green)
                                         })
                                     }
                                 }
+
                                 "$BODY_FAT" -> {
                                     if (totalBodyFat > 0.0) {
-                                        Canvas(modifier = Modifier.size(5.sdp).align(Alignment.BottomCenter), onDraw = {
+                                        Canvas(modifier = Modifier
+                                            .size(5.sdp)
+                                            .align(Alignment.BottomCenter), onDraw = {
                                             drawCircle(color = Color.Green)
                                         })
                                     }
                                 }
+
                                 "$METABOLIC_RATE" -> {
                                     if (totalMetabolicRate > 0.0) {
-                                        Canvas(modifier = Modifier.size(5.sdp).align(Alignment.BottomCenter), onDraw = {
+                                        Canvas(modifier = Modifier
+                                            .size(5.sdp)
+                                            .align(Alignment.BottomCenter), onDraw = {
                                             drawCircle(color = Color.Green)
                                         })
                                     }

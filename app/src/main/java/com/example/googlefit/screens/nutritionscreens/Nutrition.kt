@@ -519,7 +519,7 @@ fun NutritionCalendar(
             listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { dayName ->
                 Box(
                     modifier = Modifier
-                        .size(50.dp)
+                        .size(40.dp)
                         .padding(top = 20.dp),
                     contentAlignment = Alignment.Center
                 ) {
