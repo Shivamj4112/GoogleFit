@@ -49,7 +49,6 @@ class HealthManager(context: Context) : ViewModel() {
 
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
-
     //  TODO Activity
     private val _stepsRecords = MutableLiveData<List<StepsRecord>>()
     val stepsRecords: LiveData<List<StepsRecord>> get() = _stepsRecords
@@ -179,7 +178,7 @@ class HealthManager(context: Context) : ViewModel() {
             "Week" -> now.minus(7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS)
             "Month" -> now.atZone(ZoneOffset.UTC).withDayOfYear(1).truncatedTo(ChronoUnit.DAYS).toInstant()
 //            "Month" -> now.minus(30, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS)
-            else -> now.minus(7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS)
+            else -> now.atZone(ZoneOffset.UTC).withDayOfYear(1).truncatedTo(ChronoUnit.DAYS).toInstant()
         }
         _dateRange.value = start to now
         _range.value = range

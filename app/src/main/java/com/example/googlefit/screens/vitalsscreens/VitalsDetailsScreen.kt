@@ -24,6 +24,7 @@ import androidx.navigation.NavHostController
 import com.example.googlefit.HealthManager
 import com.example.googlefit.data.VitalType.HEART_RATE
 import com.example.googlefit.data.VitalType.BLOOD_PRESSURE
+import com.example.googlefit.data.VitalType.BLOOD_GLUCOSE
 import com.example.googlefit.data.VitalType.RESPIRATORY_RATE
 import com.example.googlefit.data.VitalType.BODY_TEMPERATURE
 import com.example.googlefit.data.VitalType.OXYGEN_SATURATION
@@ -43,6 +44,7 @@ fun VitalsDetailsScreen(
 
     val heartRecords by healthManager.heartRateRecords.observeAsState(emptyList())
     val bloodPressureRecord by healthManager.bloodPressureRecords.observeAsState(emptyList())
+    val bloodGlucoseRecord by healthManager.bloodGlucoseRecords.observeAsState(emptyList())
     val respiratoryRateRecord by healthManager.respiratoryRateRecords.observeAsState(emptyList())
     val oxygenRecords by healthManager.oxygenSaturationRecords.observeAsState(emptyList())
     val bodyTemperatureRecord by healthManager.bodyTemperatureRecords.observeAsState(emptyList())
@@ -58,8 +60,9 @@ fun VitalsDetailsScreen(
                 .fillMaxSize()
                 .padding(horizontal = 10.sdp),
         ) {
-
-            TopBar(navController, "Vitals")
+            val formattedVitals =
+                vitals.replace("_", " ").lowercase().replaceFirstChar { it.uppercaseChar() }
+            TopBar(navController, formattedVitals)
 
             Column(
                 modifier = Modifier
@@ -226,6 +229,83 @@ fun VitalsDetailsScreen(
                                 }
                             } else {
                                 Text(text = "No blood pressure records found for $date")
+                            }
+                        }
+                    }
+                    "$BLOOD_GLUCOSE" -> {
+                        if (bloodGlucoseRecord.isNotEmpty()) {
+                            val dateWiseBloodGlucoseRecords = bloodGlucoseRecord.groupBy { record ->
+                                formateDate(record.time.toString())
+                            }
+
+                            val targetDateRecords = dateWiseBloodGlucoseRecords[date]
+
+                            if (targetDateRecords != null) {
+                                val size = targetDateRecords.size
+
+                                val minLevel =
+                                    targetDateRecords.minOf { it.level.inMillimolesPerLiter }
+                                val maxLevel =
+                                    targetDateRecords.maxOf { it.level.inMillimolesPerLiter }
+
+
+                                Text(
+                                    text = date,
+                                    fontSize = 20.ssp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+
+                                Spacer(modifier = Modifier.height(20.sdp))
+
+                                Row {
+                                    val glucoseText = if (minLevel == maxLevel) {
+                                        "$minLevel"
+                                    } else {
+                                        "$minLevel-$maxLevel"
+                                    }
+                                    Text(
+                                        text = "$glucoseText mmol/L",
+                                        color = Color.Red,
+                                        fontSize = 12.ssp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                }
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "Blood Glucose • ",
+                                        fontSize = 10.ssp,
+                                    )
+                                    Text(
+                                        "$size entries",
+                                        fontSize = 9.ssp,
+                                    )
+                                }
+
+                                targetDateRecords.reversed().forEach { record ->
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 10.sdp, bottom = 10.sdp),
+                                    ) {
+
+                                        Text(
+                                            text = formatLastModifiedTime(record.time.toString()),
+                                            fontSize = 10.ssp
+                                        )
+
+                                        Text(
+                                            text = "%.1f mmol/L".format(record.level.inMillimolesPerLiter),
+                                            fontSize = 12.ssp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+
+                                    }
+
+                                }
+                            } else {
+                                Text(text = "No blood glucose records found for $date")
                             }
                         }
                     }

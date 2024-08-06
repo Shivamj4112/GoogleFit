@@ -1,5 +1,6 @@
 package com.example.googlefit.screens
 
+import android.util.Log
 import com.example.googlefit.HealthManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.googlefit.navigation.Route
+import com.example.googlefit.utils.util.fetchInternetTime
 import kotlinx.coroutines.delay
 import java.util.Calendar
 import java.util.TimeZone
@@ -38,36 +40,43 @@ import kotlin.math.abs
 fun MainScreen(healthManager: HealthManager, navController: NavHostController) {
 
     var allPermissionsGranted by remember { mutableStateOf<Boolean?>(null) }
-    var showTimeWarning by remember { mutableStateOf(false) }
+//    var showTimeWarning by remember { mutableStateOf<Boolean?>(null) }
 
-    val range = healthManager.range.observeAsState()
+//    LaunchedEffect(Unit) {
+//        val internetTime = fetchInternetTime()
+//
+//        val deviceTime = Calendar.getInstance().timeInMillis
+//
+//        if (internetTime != null) {
+//            val istCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata"))
+//            istCalendar.timeInMillis = internetTime
+//
+//            val deviceCalendar = Calendar.getInstance()
+//            val dateMismatch = deviceCalendar.get(Calendar.YEAR) != istCalendar.get(Calendar.YEAR) ||
+//                    deviceCalendar.get(Calendar.MONTH) != istCalendar.get(Calendar.MONTH) ||
+//                    deviceCalendar.get(Calendar.DAY_OF_MONTH) != istCalendar.get(Calendar.DAY_OF_MONTH)
+//
+//            val timeMismatch = abs(deviceTime - internetTime) > ALLOWED_TIME_DIFFERENCE
+//
+//            if (dateMismatch || timeMismatch) {
+//                showTimeWarning = false
+//            }
+//            else{
+//                showTimeWarning = false
+//            }
+//            Log.d("TAg","Date Mismatch: $dateMismatch, Time Mismatch: $timeMismatch")
+//        } else {
+//            showTimeWarning = false
+//        }
+//
+//    }
 
     LaunchedEffect(Unit) {
-        val deviceTime = Calendar.getInstance().timeInMillis
-
-        // Get current time in Indian Standard Time (IST)
-        val istCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata"))
-        val istTime = istCalendar.timeInMillis
-
-        // Compare both date and time
-        val deviceCalendar = Calendar.getInstance()
-        val dateMismatch = deviceCalendar.get(Calendar.YEAR) != istCalendar.get(Calendar.YEAR) ||
-                deviceCalendar.get(Calendar.MONTH) != istCalendar.get(Calendar.MONTH) ||
-                deviceCalendar.get(Calendar.DAY_OF_MONTH) != istCalendar.get(Calendar.DAY_OF_MONTH)
-
-        val timeMismatch = abs(deviceTime - istTime) > ALLOWED_TIME_DIFFERENCE
-
-        if (dateMismatch || timeMismatch) {
-            showTimeWarning = true
-        }
-    }
-
-    LaunchedEffect(showTimeWarning) {
-        if (!showTimeWarning) {
+//        if (showTimeWarning == false) {
             delay(50)
             healthManager.setRange("Week")
             healthManager.setDateRange("Week")
-        }
+//        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -88,68 +97,76 @@ fun MainScreen(healthManager: HealthManager, navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            if (showTimeWarning) {
-                Text(
-                    text = "Please correct the time and date on your device",
-                    color = Color.Red,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
-            when (allPermissionsGranted) {
-                null -> {
+//            showTimeWarning.let {
+//                if (it == null) {
 //                    CircularProgressIndicator()
-                }
-                false -> {
-                    // Show the "Request Permissions" UI
-                    Text(text = "Request Health Permissions")
+//                    Text(text = "Please wait...")
+//                }
+//                else if (showTimeWarning == true) {
+//                    Text(
+//                        text = "Please correct the time and date on your device",
+//                        color = Color.Red,
+//                        modifier = Modifier.padding(16.dp)
+//                    )
+//                }
+//                else{
+                    when (allPermissionsGranted) {
+                        null -> {
+//                    CircularProgressIndicator()
+                        }
+                        false -> {
+                            // Show the "Request Permissions" UI
+                            Text(text = "Request Health Permissions")
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(onClick = {
-                        permissionLauncher.launch(healthManager.permissions)
-                    }) {
-                        Text(text = "Request Permissions")
-                    }
-                }
-                true -> {
-                    Button(onClick = {
-                        navController.navigate(Route.ACTIVITY_SCREEN)
-                    }) {
-                        Text(text = "Activity")
-                    }
+                            Button(onClick = {
+                                permissionLauncher.launch(healthManager.permissions)
+                            }) {
+                                Text(text = "Request Permissions")
+                            }
+                        }
+                        true -> {
+                            Button(onClick = {
+                                navController.navigate(Route.ACTIVITY_SCREEN)
+                            }) {
+                                Text(text = "Activity")
+                            }
 
-                    Button(onClick = {
-                        navController.navigate(Route.BODY_MEASUREMENTS_SCREEN)
-                    }) {
-                        Text(text = "Body Measurements")
-                    }
+                            Button(onClick = {
+                                navController.navigate(Route.BODY_MEASUREMENTS_SCREEN)
+                            }) {
+                                Text(text = "Body Measurements")
+                            }
 
-                    Button(onClick = {
-                        navController.navigate(Route.VITALS_SCREEN)
-                    }) {
-                        Text(text = "Vitals")
-                    }
+                            Button(onClick = {
+                                navController.navigate(Route.VITALS_SCREEN)
+                            }) {
+                                Text(text = "Vitals")
+                            }
 
-                    Button(onClick = {
-                        navController.navigate(Route.NUTRITION_SCREEN)
-                    }) {
-                        Text(text = "Nutrition")
-                    }
+                            Button(onClick = {
+                                navController.navigate(Route.NUTRITION_SCREEN)
+                            }) {
+                                Text(text = "Nutrition")
+                            }
 
-                    Button(onClick = {
-                        navController.navigate(Route.SLEEP_SCREEN)
-                    }) {
-                        Text(text = "Sleep")
-                    }
+                            Button(onClick = {
+                                navController.navigate(Route.SLEEP_SCREEN)
+                            }) {
+                                Text(text = "Sleep")
+                            }
 
-                    Button(onClick = {
-                        navController.navigate(Route.CYCLE_SCREEN)
-                    }) {
-                        Text(text = "Cycle tracking")
+                            Button(onClick = {
+                                navController.navigate(Route.CYCLE_SCREEN)
+                            }) {
+                                Text(text = "Cycle tracking")
+                            }
+                        }
                     }
-                }
-            }
+//                }
+//            }
+
         }
     }
 }

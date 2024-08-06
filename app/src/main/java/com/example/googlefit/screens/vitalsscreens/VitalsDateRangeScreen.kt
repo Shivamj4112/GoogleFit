@@ -233,8 +233,7 @@ fun VitalsDateRangeScreen(
                                         bloodGlucoseRecord.groupBy { record ->
                                             formateDate(record.time.toString())
                                         }
-                                    val targetDateRecords =
-                                        dateWiseBloodGlucoseRecords[formattedDate] ?: emptyList()
+                                    val targetDateRecords = dateWiseBloodGlucoseRecords[formattedDate] ?: emptyList()
 
                                     val minLevel =
                                         targetDateRecords.minOf { it.level.inMillimolesPerLiter }
@@ -455,13 +454,15 @@ fun VitalsDateRangeScreen(
                         .padding(horizontal = 5.sdp),
                     heartRateRecords = heartRecords,
                     bloodPressureRecords = bloodPressureRecord,
+                    bloodGlucoseRecords = bloodGlucoseRecord,
                     respiratoryRecords = respiratoryRateRecord,
                     oxygenSaturationRecords = oxygenRecords,
                     bodyTemperatureRecords = bodyTemperatureRecord,
                     type = vitals,
-                    onDateClick = { heartRate, bloodPressure, respiratory, bodyTemperature, oxygenSaturation ->
+                    onDateClick = { heartRate, bloodPressure, bloodGlucose, respiratory, bodyTemperature, oxygenSaturation ->
                         selectedHeartRateRecords = heartRate
                         selectedBloodPressureRecords = bloodPressure
+                        selectedBloodGlucoseRecords = bloodGlucose
                         selectedRespiratoryRateRecords = respiratory
                         selectedBodyTemperatureRecords = bodyTemperature
                         selectedOxygenSaturationRecords = oxygenSaturation
@@ -512,7 +513,7 @@ fun VitalsDateRangeScreen(
 
                                     }
                                 } else {
-                                    Text(text = "No Data", color = Color.Gray)
+                                    Text(text = "No Data", color = Color.Gray , modifier = Modifier.align(Alignment.CenterHorizontally))
                                 }
                             }
 
@@ -532,7 +533,27 @@ fun VitalsDateRangeScreen(
                                         }
                                     }
                                 } else {
-                                    Text(text = "No Data", color = Color.Gray)
+                                    Text(text = "No Data", color = Color.Gray , modifier = Modifier.align(Alignment.CenterHorizontally))
+                                }
+                            }
+
+                            "$BLOOD_GLUCOSE" -> {
+                                if (selectedBloodGlucoseRecords.isNotEmpty()) {
+                                    selectedBloodGlucoseRecords.reversed().forEach { record ->
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(text = "Blood Pressure")
+                                            Text(
+                                                text = "%.1f mmol/L".format(record.level.inMillimolesPerLiter),
+                                                fontSize = 8.ssp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Text(text = "No Data", color = Color.Gray , modifier = Modifier.align(Alignment.CenterHorizontally))
                                 }
                             }
 
@@ -553,7 +574,7 @@ fun VitalsDateRangeScreen(
 
                                     }
                                 } else {
-                                    Text(text = "No Data", color = Color.Gray)
+                                    Text(text = "No Data", color = Color.Gray , modifier = Modifier.align(Alignment.CenterHorizontally))
                                 }
                             }
 
@@ -573,7 +594,7 @@ fun VitalsDateRangeScreen(
                                         }
                                     }
                                 } else {
-                                    Text(text = "No Data", color = Color.Gray)
+                                    Text(text = "No Data", color = Color.Gray , modifier = Modifier.align(Alignment.CenterHorizontally))
                                 }
                             }
 
@@ -593,7 +614,7 @@ fun VitalsDateRangeScreen(
                                         }
                                     }
                                 } else {
-                                    Text(text = "No Data", color = Color.Gray)
+                                    Text(text = "No Data", color = Color.Gray , modifier = Modifier.align(Alignment.CenterHorizontally))
                                 }
                             }
                         }
@@ -621,6 +642,7 @@ fun VitalsCalendar(
     modifier: Modifier = Modifier,
     heartRateRecords: List<HeartRateRecord>,
     bloodPressureRecords: List<BloodPressureRecord>,
+    bloodGlucoseRecords: List<BloodGlucoseRecord>,
     respiratoryRecords: List<RespiratoryRateRecord>,
     oxygenSaturationRecords: List<OxygenSaturationRecord>,
     bodyTemperatureRecords: List<BodyTemperatureRecord>,
@@ -628,6 +650,7 @@ fun VitalsCalendar(
     onDateClick: (
         List<HeartRateRecord>,
         List<BloodPressureRecord>,
+        List<BloodGlucoseRecord>,
         List<RespiratoryRateRecord>,
         List<BodyTemperatureRecord>,
         List<OxygenSaturationRecord>
@@ -648,6 +671,13 @@ fun VitalsCalendar(
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }.mapValues { entry ->
         entry.value.first().systolic.inMillimetersOfMercury
+    }
+
+    val bloodGlucoseGroupedData = bloodGlucoseRecords.groupBy {
+        OffsetDateTime.parse(it.time.toString())
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    }.mapValues { entry ->
+        entry.value.first().level.inMillimolesPerLiter
     }
 
     val bloodPressureDiastolicGroupedData = bloodPressureRecords.groupBy {
@@ -745,8 +775,8 @@ fun VitalsCalendar(
                     if (date.month == currentMonth.month) {
 
                         val totalHeartRate = heartRateGroupedData[date.toString()] ?: 0.0
-                        val totalSystolic =
-                            bloodPressureSystolicGroupedData[date.toString()] ?: 0.0
+                        val totalSystolic = bloodPressureSystolicGroupedData[date.toString()] ?: 0.0
+                        val totalGlucose = bloodGlucoseGroupedData[date.toString()] ?: 0.0
                         val totalDiastolic =
                             bloodPressureDiastolicGroupedData[date.toString()] ?: 0.0
                         val totalRespiratory = respiratoryGroupedData[date.toString()] ?: 0.0
@@ -765,6 +795,11 @@ fun VitalsCalendar(
                                                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
                                         },
                                         bloodPressureRecords.filter { record ->
+                                            OffsetDateTime
+                                                .parse(record.time.toString())
+                                                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
+                                        },
+                                        bloodGlucoseRecords.filter { record ->
                                             OffsetDateTime
                                                 .parse(record.time.toString())
                                                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) == date.toString()
@@ -807,6 +842,17 @@ fun VitalsCalendar(
 
                                 "$BLOOD_PRESSURE" -> {
                                     if (totalSystolic > 0.0 || totalDiastolic > 0.0) {
+                                        Canvas(
+                                            modifier = Modifier
+                                                .size(5.sdp)
+                                                .align(Alignment.BottomCenter), onDraw = {
+                                                drawCircle(color = Color.Green)
+                                            })
+                                    }
+                                }
+
+                                "$BLOOD_GLUCOSE" -> {
+                                    if (totalGlucose > 0.0) {
                                         Canvas(
                                             modifier = Modifier
                                                 .size(5.sdp)
