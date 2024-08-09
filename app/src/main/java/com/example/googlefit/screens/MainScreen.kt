@@ -1,7 +1,11 @@
 package com.example.googlefit.screens
 
-import android.util.Log
-import com.example.googlefit.HealthManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,82 +15,83 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.googlefit.navigation.Route
-import com.example.googlefit.utils.util.fetchInternetTime
-import kotlinx.coroutines.delay
-import java.util.Calendar
-import java.util.TimeZone
-import kotlin.math.abs
+import androidx.navigation.compose.rememberNavController
+import com.example.googlefit.HealthManager
+import com.example.googlefit.modelFactory.MainViewModelFactory
+import com.example.googlefit.navigation.Route.ACTIVITY_SCREEN
+import com.example.googlefit.navigation.Route.BODY_MEASUREMENTS_SCREEN
+import com.example.googlefit.navigation.Route.CYCLE_SCREEN
+import com.example.googlefit.navigation.Route.NUTRITION_SCREEN
+import com.example.googlefit.navigation.Route.SLEEP_SCREEN
+import com.example.googlefit.navigation.Route.VITALS_SCREEN
+import com.example.googlefit.viewModel.MainViewModel
 
 @Composable
-fun MainScreen(healthManager: HealthManager, navController: NavHostController) {
+fun MainScreen(
+    healthManager: HealthManager,
+    navController: NavHostController,
+    mainViewModel: MainViewModel = viewModel(factory = MainViewModelFactory(healthManager, LocalContext.current))
+) {
+    val isSupportedVersion by mainViewModel.isSupportedVersion.collectAsState()
+    val isHealthConnectInstalled by mainViewModel.isHealthConnectInstalled.collectAsState()
+    val allPermissionsGranted by mainViewModel.allPermissionsGranted.collectAsState()
+    val showPermissionDialog by mainViewModel.showPermissionDialog.collectAsState()
 
-    var allPermissionsGranted by remember { mutableStateOf<Boolean?>(null) }
-//    var showTimeWarning by remember { mutableStateOf<Boolean?>(null) }
-
-//    LaunchedEffect(Unit) {
-//        val internetTime = fetchInternetTime()
-//
-//        val deviceTime = Calendar.getInstance().timeInMillis
-//
-//        if (internetTime != null) {
-//            val istCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Kolkata"))
-//            istCalendar.timeInMillis = internetTime
-//
-//            val deviceCalendar = Calendar.getInstance()
-//            val dateMismatch = deviceCalendar.get(Calendar.YEAR) != istCalendar.get(Calendar.YEAR) ||
-//                    deviceCalendar.get(Calendar.MONTH) != istCalendar.get(Calendar.MONTH) ||
-//                    deviceCalendar.get(Calendar.DAY_OF_MONTH) != istCalendar.get(Calendar.DAY_OF_MONTH)
-//
-//            val timeMismatch = abs(deviceTime - internetTime) > ALLOWED_TIME_DIFFERENCE
-//
-//            if (dateMismatch || timeMismatch) {
-//                showTimeWarning = false
-//            }
-//            else{
-//                showTimeWarning = false
-//            }
-//            Log.d("TAg","Date Mismatch: $dateMismatch, Time Mismatch: $timeMismatch")
-//        } else {
-//            showTimeWarning = false
-//        }
-//
-//    }
-
-    LaunchedEffect(Unit) {
-//        if (showTimeWarning == false) {
-            delay(50)
-            healthManager.setRange("Week")
-            healthManager.setDateRange("Week")
-//        }
-    }
+    val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = healthManager.requestPermissionsActivityContract()
-    ) { result: Set<String> ->
-        allPermissionsGranted = result.containsAll(healthManager.permissions)
+    ) { result ->
+        mainViewModel.updatePermissions(result)
     }
 
     LaunchedEffect(Unit) {
-        allPermissionsGranted = healthManager.hasAllPermissions(healthManager.permissions)
+        val intentFilter = IntentFilter(Intent.ACTION_PACKAGE_ADDED).apply {
+            addDataScheme("package")
+        }
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                mainViewModel.recheckHealthConnectInstallation()
+            }
+        }
+        context.registerReceiver(receiver, intentFilter)
+    }
+
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { mainViewModel.resetPermissionDialog() },
+            title = { Text("Permissions Required") },
+            text = { Text("Please grant the necessary permissions in the app settings.") },
+            confirmButton = {
+                Button(onClick = {
+                    mainViewModel.resetPermissionDialog()
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                    }
+                    context.startActivity(intent)
+                }) {
+                    Text("Open Settings")
+                }
+            }
+        )
     }
 
     Surface {
@@ -97,90 +102,72 @@ fun MainScreen(healthManager: HealthManager, navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-//            showTimeWarning.let {
-//                if (it == null) {
-//                    CircularProgressIndicator()
-//                    Text(text = "Please wait...")
-//                }
-//                else if (showTimeWarning == true) {
-//                    Text(
-//                        text = "Please correct the time and date on your device",
-//                        color = Color.Red,
-//                        modifier = Modifier.padding(16.dp)
-//                    )
-//                }
-//                else{
-                    when (allPermissionsGranted) {
-                        null -> {
-//                    CircularProgressIndicator()
-                        }
-                        false -> {
-                            // Show the "Request Permissions" UI
-                            Text(text = "Request Health Permissions")
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Button(onClick = {
-                                permissionLauncher.launch(healthManager.permissions)
-                            }) {
-                                Text(text = "Request Permissions")
-                            }
-                        }
-                        true -> {
-                            Button(onClick = {
-                                navController.navigate(Route.ACTIVITY_SCREEN)
-                            }) {
-                                Text(text = "Activity")
-                            }
-
-                            Button(onClick = {
-                                navController.navigate(Route.BODY_MEASUREMENTS_SCREEN)
-                            }) {
-                                Text(text = "Body Measurements")
-                            }
-
-                            Button(onClick = {
-                                navController.navigate(Route.VITALS_SCREEN)
-                            }) {
-                                Text(text = "Vitals")
-                            }
-
-                            Button(onClick = {
-                                navController.navigate(Route.NUTRITION_SCREEN)
-                            }) {
-                                Text(text = "Nutrition")
-                            }
-
-                            Button(onClick = {
-                                navController.navigate(Route.SLEEP_SCREEN)
-                            }) {
-                                Text(text = "Sleep")
-                            }
-
-                            Button(onClick = {
-                                navController.navigate(Route.CYCLE_SCREEN)
-                            }) {
-                                Text(text = "Cycle tracking")
-                            }
-                        }
+            when {
+                isSupportedVersion == null -> {
+                    CircularProgressIndicator()
+                    Text(text = "Checking device compatibility...")
+                }
+                isSupportedVersion == false -> {
+                    Text(
+                        text = "Your Android device doesn't support the Health Connect app.",
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                isHealthConnectInstalled == null -> {
+                    CircularProgressIndicator()
+                    Text(text = "Checking Health Connect installation...")
+                }
+                isHealthConnectInstalled == false -> {
+                    Text(
+                        text = "Health Connect app is not installed.",
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                    Button(onClick = { mainViewModel.installHealthConnect() }) {
+                        Text(text = "Install Health Connect")
                     }
-//                }
-//            }
+                }
+                allPermissionsGranted == false -> {
+                    Text(text = "Request Health Permissions")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { mainViewModel.requestPermissions(permissionLauncher) }) {
+                        Text(text = "Request Permissions")
+                    }
+                }
+                allPermissionsGranted == true -> {
 
+                    Button(onClick = { navController.navigate(ACTIVITY_SCREEN) }) {
+                        Text(text = "Activity")
+                    }
+                    Button(onClick = { navController.navigate(BODY_MEASUREMENTS_SCREEN) }) {
+                        Text(text = "Body Measurements")
+                    }
+                    Button(onClick = { navController.navigate(VITALS_SCREEN) }) {
+                        Text(text = "Vitals")
+                    }
+                    Button(onClick = { navController.navigate(NUTRITION_SCREEN) }) {
+                        Text(text = "Nutrition")
+                    }
+                    Button(onClick = { navController.navigate(SLEEP_SCREEN) }) {
+                        Text(text = "Sleep")
+                    }
+                    Button(onClick = { navController.navigate(CYCLE_SCREEN) }) {
+                        Text(text = "Cycle tracking")
+                    }
+                }
+            }
         }
     }
 }
 
-@Preview
 @Composable
+@Preview
 fun MainPreview() {
     MainScreen(
         healthManager = HealthManager(LocalContext.current),
-        navController = NavHostController(LocalContext.current)
+        navController = rememberNavController()
     )
 }
-
-private const val ALLOWED_TIME_DIFFERENCE = 5 * 60 * 1000L // 5 minutes in milliseconds
-
-
-

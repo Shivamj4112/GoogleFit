@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.lifecycle.service)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -97,7 +98,11 @@ dependencies {
     implementation("commons-net:commons-net:3.8.0")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.10")
+
+    // work
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.core:core-ktx:1.13.1")
+
 
 
 }

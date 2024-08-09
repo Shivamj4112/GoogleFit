@@ -269,7 +269,6 @@ class HealthManager(context: Context) : ViewModel() {
             _cyclingRecords.value = data
         }
     }
-
     private fun fetchSpeedData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
@@ -328,7 +327,6 @@ class HealthManager(context: Context) : ViewModel() {
             _weightRecords.value = data
         }
     }
-
     private fun fetchHeight(){
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
@@ -342,7 +340,6 @@ class HealthManager(context: Context) : ViewModel() {
             _heightRecords.value = data
         }
     }
-
     private fun fetchBodyFat() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
@@ -356,7 +353,6 @@ class HealthManager(context: Context) : ViewModel() {
             _bodyFatRecords.value = data
         }
     }
-
     private fun fetchMetabolicRate(){
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch
@@ -371,7 +367,6 @@ class HealthManager(context: Context) : ViewModel() {
         }
     }
 
-
     // TODO Vital Records
     fun fetchVitalsData() {
         fetchHeartRateData()
@@ -381,6 +376,7 @@ class HealthManager(context: Context) : ViewModel() {
         fetchOxygenSaturationData()
         fetchBodyTemperatureData()
     }
+
     private fun fetchHeartRateData() {
         viewModelScope.launch {
             val (start, end) = dateRange.value ?: return@launch

@@ -1,5 +1,6 @@
 package com.example.googlefit.screens
 
+import android.os.Build
 import android.util.Log
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -44,6 +45,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -139,6 +141,7 @@ private fun ActivityContent(
     var totalSteps by remember { mutableStateOf("") }
     var totalCalories by remember { mutableStateOf(0.0) }
     var totalDistance by remember { mutableStateOf(0.0) }
+    var totalPower by remember { mutableStateOf(0.0) }
     var totalCycling by remember { mutableStateOf(0.0) }
     var totalSpeed by remember { mutableStateOf(0.0) }
 
@@ -152,7 +155,7 @@ private fun ActivityContent(
             showChart1 = false
             showChart2 = false
 
-            delay(300)
+            delay(350)
 
             when (range) {
                 "Day" -> {
@@ -179,8 +182,9 @@ private fun ActivityContent(
                 .verticalScroll(rememberScrollState())
 
         ) {
-
             when (range) {
+
+
                 "Day" -> {
                     val intervalLabels =
                         listOf("4 - 8", "8 - 12", "12 - 16", "16 - 20", "20 - 24", "0 - 4")
@@ -196,9 +200,6 @@ private fun ActivityContent(
                         val totalCalories = caloriesRecords
                             .filter { it.endTime >= interval.first && it.endTime < interval.second }
                             .sumOf { it.energy.inKilocalories }
-
-
-                        Log.d("Steps", "ActivityContent: $totalSteps ==> ${stepsRecords.size}")
 
                         Bars(
                             label = intervalLabels[index],
@@ -239,6 +240,11 @@ private fun ActivityContent(
                         val totalDistance = distanceRecords
                             .filter { it.endTime >= interval.first && it.endTime < interval.second }
                             .sumOf { it.distance.inKilometers }
+
+                        val totalPower = powerRecord
+                            .filter { it.endTime >= interval.first && it.endTime < interval.second }
+                            .sumOf { it.samples.first().power.inWatts }
+
 
                         val totalSpeed = speedRecords
                             .filter { it.endTime >= interval.first && it.endTime < interval.second }
@@ -290,8 +296,20 @@ private fun ActivityContent(
                                         )
                                     )
                                 ),
-
+                                Bars.Data(
+                                    label = "Power",
+                                    value = totalPower,
+                                    color = SolidColor(Color.Gray),
+                                    properties = BarProperties(
+                                        thickness = 8.dp,
+                                        spacing = 0.dp,
+                                        cornerRadius = Bars.Data.Radius.Rectangle(
+                                            topRight = 2.dp,
+                                            topLeft = 2.dp
+                                        )
+                                    )
                                 )
+                            )
                         )
                     }
 
@@ -338,16 +356,9 @@ private fun ActivityContent(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Power Records",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 10.dp)
-                    )
-                    PowerRecordsList(powerRecord)
-
-                    Text(
                         text = "Exercise Records",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 10.dp)
+                        modifier = Modifier
                     )
                     ExerciseRecordsList(exerciseRecords)
 
@@ -374,6 +385,13 @@ private fun ActivityContent(
                             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                     }.mapValues { entry ->
                         entry.value.sumOf { it.distance.inKilometers }
+                    }
+
+                    val powerGroupedData = powerRecord.groupBy {
+                        OffsetDateTime.parse(it.endTime.toString())
+                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                    }.mapValues { entry ->
+                        entry.value.sumOf { it.samples.first().power.inWatts }
                     }
 
                     val cyclingGroupedData = cyclingRecords.groupBy {
@@ -438,6 +456,7 @@ private fun ActivityContent(
                     }
                     val chartData2 = past7Days.map { (date, label) ->
                         val totalDistance = distanceGroupedData[date.toString()] ?: 0.0
+                        val totalPower = powerGroupedData[date.toString()] ?: 0.0
                         val totalSpeed = speedGroupedData[date.toString()] ?: 0.0
                         val totalCycling = cyclingGroupedData[date.toString()] ?: 0.0
 
@@ -474,6 +493,19 @@ private fun ActivityContent(
                                     label = "Cycling",
                                     value = totalCycling,
                                     color = SolidColor(Color.DarkGray),
+                                    properties = BarProperties(
+                                        thickness = 8.dp,
+                                        spacing = 0.dp,
+                                        cornerRadius = Bars.Data.Radius.Rectangle(
+                                            topRight = 2.dp,
+                                            topLeft = 2.dp
+                                        )
+                                    )
+                                ),
+                                Bars.Data(
+                                    label = "Power",
+                                    value = totalPower,
+                                    color = SolidColor(Color.Gray),
                                     properties = BarProperties(
                                         thickness = 8.dp,
                                         spacing = 0.dp,
@@ -529,19 +561,11 @@ private fun ActivityContent(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Power Records",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 10.dp)
-                    )
-                    PowerRecordsList(powerRecord)
-
-                    Text(
                         text = "Exercise Records",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 10.dp)
+                        modifier = Modifier
                     )
                     ExerciseRecordsList(exerciseRecords)
-
                     showDetailsDialog = false
                 }
 
@@ -553,13 +577,15 @@ private fun ActivityContent(
                         exerciseRecords = exerciseRecords,
                         caloriesRecords = caloriesRecords,
                         distanceRecords = distanceRecords,
+                        powerRecords = powerRecord,
                         speedRecords = speedRecords,
                         cyclingRecords = cyclingRecords,
-                    ) { steps, calories, distance, cycling, speed ->
+                    ) { steps, calories, distance, powerRecords, cycling, speed ->
                         showDetailsDialog = true
                         totalSteps = steps.toString()
                         totalCalories = calories
                         totalDistance = distance
+                        totalPower = powerRecords
                         totalCycling = cycling
                         totalSpeed = speed
                     }
@@ -595,6 +621,7 @@ private fun ActivityContent(
                     "Steps" to totalSteps,
                     "Calories" to totalCalories,
                     "Distance" to totalDistance,
+                    "Power" to totalPower,
                     "Cycling" to totalCycling,
                     "Speed" to totalSpeed,
                 )
@@ -607,6 +634,7 @@ private fun ActivityContent(
                     var newValue = when (label) {
                         "Calories" -> "%.2f Cal".format(value)
                         "Distance" -> "%.2f km".format(value)
+                        "Power" -> "%.2f W".format(value)
                         "Cycling" -> "%.2f km".format(value)
                         "Speed" -> "%.2f km/h".format(value)
                         else -> "$value steps"
@@ -647,9 +675,10 @@ fun CustomCalendar(
     exerciseRecords: List<ExerciseSessionRecord>,
     caloriesRecords: List<TotalCaloriesBurnedRecord>,
     distanceRecords: List<DistanceRecord>,
+    powerRecords: List<PowerRecord>,
     speedRecords: List<SpeedRecord>,
     cyclingRecords: List<CyclingPedalingCadenceRecord>,
-    onDateClick: (Double, Double, Double, Double, Double) -> Unit
+    onDateClick: (Double, Double, Double,Double, Double, Double) -> Unit
 ) {
     val daysInMonth = LocalDate.now().lengthOfMonth()
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
@@ -674,6 +703,14 @@ fun CustomCalendar(
     }.mapValues { entry ->
         entry.value.sumOf { it.distance.inKilometers }
     }
+
+    val powerGroupedData = powerRecords.groupBy {
+        OffsetDateTime.parse(it.endTime.toString())
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    }.mapValues { entry ->
+        entry.value.sumOf { it.samples.first().power.inWatts }
+    }
+
     val cyclingGroupedData = cyclingRecords.groupBy {
         OffsetDateTime.parse(it.endTime.toString())
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
@@ -696,6 +733,9 @@ fun CustomCalendar(
 
     val totalDistanceForMonth =
         distanceGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
+
+    val totalPowerForMonth =
+        powerGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
 
     val totalSpeedForMonth =
         speedGroupedData.filterKeys { LocalDate.parse(it).month == currentMonth.month }.values.sum()
@@ -731,6 +771,11 @@ fun CustomCalendar(
                 )
                 Text(
                     text = "Total Distance: %.2f km".format(totalDistanceForMonth),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Total Power: %.2f km".format(totalPowerForMonth),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -787,6 +832,7 @@ fun CustomCalendar(
                     val totalSteps = stepsGroupedData[date?.toString()]?.toDouble() ?: 0.0
                     val totalCalories = caloriesGroupedData[date?.toString()] ?: 0.0
                     val totalDistance = distanceGroupedData[date?.toString()] ?: 0.0
+                    val totalPower = powerGroupedData[date?.toString()] ?: 0.0
                     val totalCycling = cyclingGroupedData[date?.toString()] ?: 0.0
                     val totalSpeed = speedGroupedData[date?.toString()] ?: 0.0
 
@@ -804,6 +850,7 @@ fun CustomCalendar(
                                                 totalSteps,
                                                 totalCalories,
                                                 totalDistance,
+                                                totalPower,
                                                 totalCycling,
                                                 totalSpeed
                                             )
@@ -816,7 +863,7 @@ fun CustomCalendar(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(text = date.dayOfMonth.toString(), fontSize = 12.sp)
-                            if (totalSteps > 0.0 || totalCalories > 0.0 || totalSpeed > 0.0 || totalDistance > 0.0) {
+                            if (totalSteps > 0.0 || totalCalories > 0.0 || totalSpeed > 0.0 || totalDistance > 0.0 || totalPower > 0.0 || totalCycling > 0.0) {
                                 Canvas(
                                     modifier = Modifier
                                         .size(5.dp)
@@ -836,16 +883,9 @@ fun CustomCalendar(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Power Records",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 10.dp)
-        )
-        PowerRecordsList(powerRecord)
-
-        Text(
             text = "Exercise Records",
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 10.dp)
+            modifier = Modifier
         )
         ExerciseRecordsList(exerciseRecords)
     }
@@ -892,11 +932,74 @@ fun ExerciseRecordItem(exerciseRecord: ExerciseSessionRecord) {
         "${exerciseRecord.title}, "
     }
 
+    var type = when(exerciseRecord.exerciseType) {
+        0 -> "Workout"
+        2 -> "Badminton"
+        4 -> "Baseball"
+        5 -> "Basketball"
+        8 -> "Biking"
+        9 -> "Biking stationary"
+        10 -> "Boot Camp"
+        11 -> "Boxing"
+        13 -> "Calisthenics"
+        14 -> "Cricket"
+        16 -> "Dancing"
+        25 -> "Elliptical"
+        26 -> "Exercise class"
+        27 -> "Fencing"
+        28 -> "American football"
+        29 -> "Australian football"
+        31 -> "Frisbee"
+        32 -> "Golf"
+        34 -> "Gymnastics"
+        35 -> "Handball"
+        36 -> "High intensity interval training"
+        37 -> "Hiking"
+        38 -> "Ice hockey"
+        39 -> "Ice Skating"
+        44 -> "Martial Arts"
+        46 -> "Paddling"
+        47 -> "Paragliding"
+        48 -> "Pilates"
+        50 -> "Racquetball"
+        51 -> "Rock Climbing"
+        53 -> "Rowing"
+        54 -> "Rowing Machine"
+        55 -> "Rugby"
+        56 -> "Running"
+        57 -> "Treadmill running"
+        58 -> "Sailing"
+        59 -> "Scuba diving"
+        60 -> "Skating"
+        61 -> "Skiing"
+        62 -> "Snowboarding"
+        63 -> "Snowshoeing"
+        64 -> "Soccer"
+        65 -> "Softball"
+        66 -> "Squash"
+        68 -> "Stair climbing"
+        69 -> "Stair climbing machine"
+        70 -> "Strength training"
+        72 -> "Surfing"
+        73 -> "Open water swimming"
+        74 -> "Pool Swimming"
+        75 -> "Table tennis"
+        76 -> "Tennis"
+        78 -> "Volleyball"
+        79 -> "Walking"
+        80 -> "Water Polo"
+        81 -> "Weightlifting"
+        82 -> "Wheelchair"
+        83 -> "Yoga"
+        else -> "Unknown"
+
+    }
+
     Column(
         modifier = Modifier
             .width(250.sdp)
             .padding(end = 10.sdp)
-            .background(Color.Black, RoundedCornerShape(15.dp))
+            .background(Color.Black, RoundedCornerShape(10.dp))
             .padding(8.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -906,20 +1009,18 @@ fun ExerciseRecordItem(exerciseRecord: ExerciseSessionRecord) {
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
+
             Text(
-                text = exerciseRecord.exerciseType.toString(),
+                text = type,
                 color = Color.White,
-                fontSize = 20.sp,
+                fontSize = 14.ssp,
                 fontWeight = FontWeight.Bold
             )
-//            Text(
-//                text = activitiesType[exerciseRecord.exerciseType] ?: "",
-//                color = Color.White,
-//                fontSize = 20.sp,
-//                fontWeight = FontWeight.Bold
-//            )
 
-            Log.d("ExerciseRecordItem", "ExerciseRecordItem: ${exerciseRecord.exerciseType}  ==> $title")
+            Log.d(
+                "ExerciseRecordItem",
+                "ExerciseRecordItem: ${exerciseRecord.exerciseType}  ==> $type"
+            )
         }
         Text(
             color = Color.White,
@@ -947,82 +1048,3 @@ fun ExerciseRecordItem(exerciseRecord: ExerciseSessionRecord) {
     }
 }
 
-@Composable
-fun PowerRecordsList(powerRecords: List<PowerRecord>) {
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(key1 = powerRecords) {
-        if (powerRecords.isNotEmpty()) {
-            listState.scrollToItem(powerRecords.size - 1)
-        }
-    }
-
-    if (powerRecords.isNotEmpty()) {
-        LazyRow(
-            state = listState,
-            reverseLayout = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.sdp)
-        ) {
-            items(powerRecords) { powerRecords ->
-                PowerRecordItem(powerRecords)
-            }
-        }
-    } else {
-        Text(
-            text = "No power records available",
-            color = Color.White,
-            fontSize = 14.sp,
-        )
-    }
-}
-
-@Composable
-fun PowerRecordItem(powerRecord: PowerRecord) {
-
-    var title = if (powerRecord.samples.isNotEmpty()) {
-        ""
-    } else {
-        "${powerRecord.samples.first().power.inWatts} W, "
-    }
-
-    Column(
-        modifier = Modifier
-            .width(250.sdp)
-            .padding(end = 10.sdp)
-            .background(Color.Black, RoundedCornerShape(15.dp))
-            .padding(8.dp)
-    ) {
-        Text(
-            text = title,
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Text(
-            color = Color.White,
-            text = "${formateDate(powerRecord.startTime.toString())} at ${
-                formatLastModifiedTime(powerRecord.startTime.toString())
-            } - ${formatLastModifiedTime(powerRecord.endTime.toString())}",
-            fontSize = 8.ssp,
-        )
-        Row {
-            Text(
-                text = util.formatDuration(
-                    timeDiffInSeconds(
-                        powerRecord.startTime.toString(),
-                        powerRecord.endTime.toString()
-                    )
-                ),
-                color = Color.White,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.width(5.dp))
-        }
-
-        HorizontalDivider(color = Color.DarkGray, modifier = Modifier.padding(top = 5.sdp))
-    }
-}

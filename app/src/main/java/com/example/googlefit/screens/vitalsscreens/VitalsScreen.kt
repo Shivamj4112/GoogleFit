@@ -449,4 +449,3 @@ fun VitalsScreen(healthManager: HealthManager, navController: NavHostController)
         }
     }
 }
-
